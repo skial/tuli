@@ -1,0 +1,4 @@
+-lib klas
+-cp src
+-js bin/tuli.js
+-main Main

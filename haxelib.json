@@ -1,0 +1,16 @@
+{
+  "name": "tuli",
+  "license": "MIT",
+  "classPath": "src",
+  "tags": ["tuli", "static", "site"],
+  "description": "Part of a static site generator.",
+  "contributors": ["skial"],
+  "releasenote": "Initial Release",
+  "version": "0.0.1-alpha",
+  "url": "https://github.com/skial/tuli",
+  "dependencies": {
+	"mo": "",
+	"detox": "",
+	"klas": ""
+  }
+}
