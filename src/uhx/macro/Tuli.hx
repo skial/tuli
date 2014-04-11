@@ -15,10 +15,10 @@ import uhx.lexer.MarkdownParser;
 import uhx.macro.KlasImp;
 import haxe.macro.Context;
 import haxe.macro.Compiler;
-import uhx.macro.help.TemCommon;
+//import uhx.macro.help.TemCommon;
 
 import Detox;
-import uhx.tem.Parser;
+//import uhx.tem.Parser;
 
 using sys.io.File;
 using sys.FileSystem;
