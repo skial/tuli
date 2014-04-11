@@ -40,7 +40,7 @@ Tuli in.
 
 Heres the basics you will need in `config.json` -
 
-```
+```json
 {
 	"input":"path/to/input/folder",
 	"output":"path/to/output/folder",
@@ -60,7 +60,7 @@ Tuli.onExtension('md', Your.handler, Before);
 
 then in your `.hxml` build file add -
 
-```
+```cmd
 --macro path.to.you.Class.initialize()
 ```
 
