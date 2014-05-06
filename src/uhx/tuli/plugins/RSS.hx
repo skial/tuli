@@ -70,42 +70,48 @@ class RSS {
 				
 			}
 			
-			domEntry = entry.parse();
+			var title = dom.find('h1').first().text();
 			
-			domEntry.find('guid').setText( id );
-			domEntry.find('link').setText( id );
-			domEntry.find('title').setText( dom.find('h1').first().text() );
-			domEntry.find('description').setText( dom.find('p').first().text() );
-			domEntry.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
-			
-			domFeed.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
-			domFeed.find('lastBuildDate').setText( DateTools.format( file.stats.mtime, '%a, %d %b %Y %H:%M:%S GMT' ) );
-			domFeed.find('ttl').next().setAttr('href', 'http://haxe.io/$path');
-			
-			domFeed.find('channel').append( null, domEntry );
-			
-			xmlCache.set( path, domFeed );
-			
-			if (!xmlCache.exists( html + 'index.html' )) {
-				xmlCache.set( html + 'index.html', dom );
+			if (title != '') {
+				
+				domEntry = entry.parse();
+				
+				domEntry.find('guid').setText( id );
+				domEntry.find('link').setText( id );
+				domEntry.find('title').setText( title );
+				domEntry.find('description').setText( dom.find('p').first().text() );
+				domEntry.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				
+				domFeed.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				domFeed.find('lastBuildDate').setText( DateTools.format( file.stats.mtime, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				domFeed.find('ttl').next().setAttr('href', 'http://haxe.io/$path');
+				
+				domFeed.find('channel').append( null, domEntry );
+				
+				xmlCache.set( path, domFeed );
+				
+				if (!xmlCache.exists( html + 'index.html' )) {
+					xmlCache.set( html + 'index.html', dom );
+				}
+				
+				var result = domFeed.html();
+				var lowered = ['pubdate>' => 'pubDate>', 'lastbuilddate>' => 'lastBuildDate>'];
+				
+				for (key in lowered.keys()) {
+					result = result.replace(key, lowered.get( key ));
+				}
+				
+				while (result.indexOf('&amp;') > -1) {
+					result = result.replace('&amp;', '&');
+				}
+				
+				for (key in Markdown.characters.keys()) {
+					result = result.replace(Markdown.characters.get( key ), key );
+				}
+				
+				Tuli.fileCache.set( path, result );
+				
 			}
-			
-			var result = domFeed.html();
-			var lowered = ['pubdate>' => 'pubDate>', 'lastbuilddate>' => 'lastBuildDate>'];
-			
-			for (key in lowered.keys()) {
-				result = result.replace(key, lowered.get( key ));
-			}
-			
-			while (result.indexOf('&amp;') > -1) {
-				result = result.replace('&amp;', '&');
-			}
-			
-			for (key in Markdown.characters.keys()) {
-				result = result.replace(Markdown.characters.get( key ), key );
-			}
-			
-			Tuli.fileCache.set( path, result );
 			
 			dom = null;
 			domFeed = null;

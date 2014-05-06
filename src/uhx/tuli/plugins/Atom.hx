@@ -70,39 +70,44 @@ class Atom {
 				
 			}
 			
-			domEntry = entry.parse();
+			var title = dom.find('h1').first().text().trim();
 			
-			domEntry.find('id').setText( id );
-			domEntry.find('title').setText( dom.find('h1').first().text() );
-			domEntry.find('summary').setText( dom.find('p').first().text() );
-			domEntry.find('content').setAttr('src', id).setAttr('type','text/html');
-			domEntry.find('published').setText( Tuli.asISO8601( file.stats.ctime ) );
-			
-			domFeed.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
-			domEntry.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
-			
-			domFeed.find('link').setAttr('href', 'http://haxe.io/$path');
-			domFeed.first().next().append( null, domEntry );
-			// The following line causes a memory leak.
-			//domFeed.find('author').afterThisInsert( domEntry );
-			
-			xmlCache.set( path, domFeed );
-			
-			if (!xmlCache.exists( html + 'index.html' )) {
-				xmlCache.set( html + 'index.html', dom );
+			if (title != '') {
+				domEntry = entry.parse();
+				
+				domEntry.find('id').setText( id );
+				domEntry.find('title').setText( title );
+				domEntry.find('summary').setText( dom.find('p').first().text() );
+				domEntry.find('content').setAttr('src', id).setAttr('type','text/html');
+				domEntry.find('published').setText( Tuli.asISO8601( file.stats.ctime ) );
+				
+				domFeed.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
+				domEntry.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
+				
+				domFeed.find('link').setAttr('href', 'http://haxe.io/$path');
+				domFeed.first().next().append( null, domEntry );
+				// The following line causes a memory leak.
+				//domFeed.find('author').afterThisInsert( domEntry );
+				
+				xmlCache.set( path, domFeed );
+				
+				if (!xmlCache.exists( html + 'index.html' )) {
+					xmlCache.set( html + 'index.html', dom );
+				}
+				
+				var result = domFeed.html();
+				
+				while (result.indexOf('&amp;') > -1) {
+					result = result.replace('&amp;', '&');
+				}
+				
+				for (key in Markdown.characters.keys()) {
+					result = result.replace(Markdown.characters.get( key ), key );
+				}
+				
+				Tuli.fileCache.set( path, result );
+				
 			}
-			
-			var result = domFeed.html();
-			
-			while (result.indexOf('&amp;') > -1) {
-				result = result.replace('&amp;', '&');
-			}
-			
-			for (key in Markdown.characters.keys()) {
-				result = result.replace(Markdown.characters.get( key ), key );
-			}
-			
-			Tuli.fileCache.set( path, result );
 			
 			dom = null;
 			domFeed = null;

@@ -117,21 +117,22 @@ class Tuli {
 	// This is currently not saved, so the data has to be recreated on each call.
 	// Call via your `hxml` file `--macro uhx.macro.Tuli.onData(pack.age.Class.callback)`
 	public static function onData(callback:Dynamic->Dynamic, ?when:TuliState):Void {
-		//initialize();
-		(when == null || when == Before) ? dataPluginsBefore.push( callback ) : dataPluginsAfter.push( callback );
+		if (when == null) when = Before;
+		switch (when) {
+			case Before: dataPluginsBefore.push( callback );
+			case After: dataPluginsAfter.push( callback );
+		}
 	}
 	
 	private static var finishCallbacksBefore:Array<Void->Void> = [];
 	private static var finishCallbacksAfter:Array<Void->Void> = [];
 
 	public static function onFinish(callback:Void->Void, ?when:TuliState):Void {
-		//initialize();
 		if (when == null) when = After;
 		switch (when) {
 			case After: finishCallbacksAfter.push( callback );
 			case Before: finishCallbacksBefore.push( callback );
 		}
-		//(when == null || when == After) ? finishCallbacksAfter.push( callback ) : finishCallbacksBefore.push( callback );
 	}
 	
 	private static var classes:Map<String, Class<TuliPlugin>> = new Map();
@@ -198,9 +199,6 @@ class Tuli {
 			var item = allItems[index].normalize();
 			var location = '$path/$item'.normalize();
 			
-			/*if (!location.isDirectory()) {
-				files.push( item );
-			} else {*/
 			if (location.isDirectory()) {
 				allItems = allItems.concat( location.readDirectory().map( function(d) return '$item/$d'.normalize() ) );
 			}
@@ -219,13 +217,9 @@ class Tuli {
 		
 		for (file in config.files) {
 			var stats = '$path/${file.path}'.stat();
-			//if (asISO8601( stats.mtime ) != file.modified) {
-				file.size = stats.size;
-				file.modified = asISO8601(stats.mtime);
-				file.stats = stats;
-			/*} else {
-				
-			}*/
+			file.size = stats.size;
+			file.modified = asISO8601(stats.mtime);
+			file.stats = stats;
 		}
 		
 		config.files = config.files.concat( [for (newItem in newItems) if (!'$path/$newItem'.isDirectory()) {
