@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<project version="2">
+  <!-- Output SWF options -->
+  <output>
+    <movie outputType="Application" />
+    <movie input="" />
+    <movie path="run.n" />
+    <movie fps="0" />
+    <movie width="0" />
+    <movie height="0" />
+    <movie version="1" />
+    <movie minorVersion="0" />
+    <movie platform="Neko" />
+    <movie background="#FFFFFF" />
+  </output>
+  <!-- Other classes to be compiled into your SWF -->
+  <classpaths>
+    <class path="src" />
+  </classpaths>
+  <!-- Build options -->
+  <build>
+    <option directives="openfl" />
+    <option flashStrict="False" />
+    <option noInlineOnDebug="False" />
+    <option mainClass="LibRunner" />
+    <option enabledebug="False" />
+    <option additional="--remap flash:flash" />
+  </build>
+  <!-- haxelib libraries -->
+  <haxelib>
+    <library name="tjson" />
+    <library name="mo" />
+    <library name="detox" />
+    <library name="klas" />
+    <library name="tink_core" />
+    <library name="tink_macro" />
+    <library name="hxparse" />
+    <library name="selecthxml" />
+  </haxelib>
+  <!-- Class files to compile (other referenced classes will automatically be included) -->
+  <compileTargets>
+    <compile path="src\Main.hx" />
+  </compileTargets>
+  <!-- Paths to exclude from the Project Explorer tree -->
+  <hiddenPaths>
+    <hidden path="obj" />
+  </hiddenPaths>
+  <!-- Executed before build -->
+  <preBuildCommand />
+  <!-- Executed after build -->
+  <postBuildCommand alwaysRun="False" />
+  <!-- Other project options -->
+  <options>
+    <option showHiddenPaths="False" />
+    <option testMovie="Custom" />
+    <option testMovieCommand="run.bat" />
+  </options>
+  <!-- Plugin storage -->
+  <storage />
+</project>

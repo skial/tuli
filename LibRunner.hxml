@@ -1,0 +1,15 @@
+-lib tjson
+-lib mo
+-lib detox
+-lib klas
+-lib tink_core
+-lib tink_macro
+-lib hxparse
+-lib selecthxml
+-lib tappi
+-lib imagemagick
+-cp src
+-neko run.n
+-D openfl
+-main LibRunner
+--remap flash:flash

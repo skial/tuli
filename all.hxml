@@ -1,0 +1,49 @@
+-lib tuli
+-lib mo
+-lib detox
+-lib beanhx
+-lib tjson
+-lib selecthxml
+-debug
+#-dce no
+-cp src
+
+--each
+
+-neko atom.n
+-main uhx.tuli.plugins.Atom
+
+--next
+
+-neko boxedimages.n
+-main uhx.tuli.plugins.ImageLetterbox
+
+--next
+
+-neko importhtml.n
+-main uhx.tuli.plugins.ImportHTML
+
+--next
+
+-neko markdown.n
+-main uhx.tuli.plugins.Markdown
+
+--next
+
+-neko nofollow.n
+-main uhx.tuli.plugins.NoFollow
+
+--next
+
+-neko rss.n
+-main uhx.tuli.plugins.RSS
+
+--next
+
+-neko socialmetadata.n
+-main uhx.tuli.plugins.SocialMetadata
+
+--next
+
+-neko titlelinks.n
+-main uhx.tuli.plugins.TitleLinks
