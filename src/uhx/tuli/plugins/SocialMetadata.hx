@@ -1,5 +1,6 @@
 package uhx.tuli.plugins;
 
+import haxe.imagemagick.Imagick;
 import sys.io.File;
 import uhx.sys.Tuli;
 
@@ -60,8 +61,6 @@ class SocialMetadata {
 				}
 			}
 			
-			var url = dom.find('meta[property="og:url"]');
-			
 			for (title in titles) {
 				title.setAttr('content', dom.find('title').text());
 			}
@@ -74,6 +73,32 @@ class SocialMetadata {
 					description.setAttr('content', '$desc...');
 				}
 			}
+			
+			var img = 'img/skial.jpg';
+			var alt = dom.find('img[alt*="social"]');
+			var cardType = 'summary';
+			
+			var images = [];
+			for (id in ['property', 'name']) {
+				for (meta in dom.find('meta[$id*="image"]')) {
+					if (meta.attr('content') == '') images.push( meta );
+				}
+			}
+			
+			if (alt.length > 0) {
+				img = alt.first().attr('src');
+				var data = new Imagick('${Tuli.config.input}/$img'.normalize());
+				if (data.width >= 280 && data.height >= 150) {
+					dom.find('meta[name="twitter:image"]').setAttr('name', 'twitter:image:src');
+					cardType = 'summary_large_image';
+				}
+			}
+			
+			dom.find('meta[name="twitter:card"]').setAttr('content', cardType);
+			
+			for (image in images) image.setAttr('content', 'http://haxe.io/$img'.normalize());
+			
+			var url = dom.find('meta[property="og:url"]');
 			
 			if (url.length > 0) {
 				var path = 'http://haxe.io/$file'.normalize();

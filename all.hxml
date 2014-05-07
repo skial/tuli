@@ -4,6 +4,7 @@
 -lib beanhx
 -lib tjson
 -lib selecthxml
+-lib imagemagick
 -debug
 #-dce no
 -cp src
