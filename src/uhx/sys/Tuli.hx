@@ -103,7 +103,6 @@ class Tuli {
 	// This allows for multiply extensions to deal with the same file.
 	// Call via your `hxml` file `--macro uhx.macro.Tuli.onExtension('html', pack.age.Class.callback)`
 	public static function onExtension(extension:String, callback:TuliFile->String->String, ?when:TuliState):Void {
-		//initialize();
 		var map = (when == null || when == Before) ? extPluginsBefore : extPluginsAfter;
 		var cbs = map.exists( extension ) ? map.get( extension ) : [];
 		cbs.push( callback );

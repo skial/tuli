@@ -21,11 +21,23 @@ class NoFollow {
 		
 		Tuli.onExtension( 'html', handler, After );
 	}
-
+	
 	public function handler(file:TuliFile, content:String) {
 		var dom = content.parse();
+		var skip:Array<String> = Tuli.config.extra.plugins.nofollow.skip;
+		var links = dom.find('a');
 		
-		for (a in dom.find('a')) {
+		links = links.filter( function(n) {
+			var r = false;
+			for (s in skip) {
+				var href = n.attr('href').normalize();
+				if (href.startsWith('/') || href.indexOf(s) > -1) return false;
+			}
+			return true;
+		} );
+		
+		for (a in links) {
+			
 			if (a.attr('rel').indexOf('nofollow') == -1) {
 				a.set('rel', (a.attr('rel') + ' nofollow').ltrim());
 			}
