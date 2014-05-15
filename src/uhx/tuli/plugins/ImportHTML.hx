@@ -2,6 +2,7 @@ package uhx.tuli.plugins;
 
 import sys.io.File;
 import uhx.sys.Tuli;
+import uhx.select.Json in JsonSelect;
 
 using Detox;
 using StringTools;
@@ -83,13 +84,27 @@ class ImportHTML {
 					var items = dom.find( selector );
 					/*trace( selector );
 					trace( items );*/
-					if (items.length > 0) {
-						if ([for (att in content.attributes()) att].indexOf('text') == -1) {
+					//if (items.length > 0) {
+						for (att in content.attributes()) {
+							switch (att.trim()) {
+								case 'data-text', 'text':
+									content = content.replaceWith(items.text().parse());
+									
+								case 'data-json', 'json':
+									var data = JsonSelect.find(Tuli.config, selector);
+									trace( data.length );
+									
+								case _:
+									content = content.replaceWith(null, items);
+									
+							}
+						}
+						/*if ([for (att in content.attributes()) att].indexOf('text') == -1) {
 							content = content.replaceWith(null, items);
 						} else {
 							content = content.replaceWith(items.text().parse());
-						}
-					}
+						}*/
+					//}
 				}
 				
 				// Remove all '<content />` from the DOM.

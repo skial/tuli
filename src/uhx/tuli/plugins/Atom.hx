@@ -35,7 +35,7 @@ class Atom {
 		
 		var dir = file.path.directory();
 		if (dir == '') dir = 'articles';
-		var path = '$dir.atom'.normalize();
+		var path = '$dir/atom.xml'.normalize();
 		var html = '${file.path.withoutExtension()}/'.normalize();
 		var id = 'http://haxe.io/$html';
 		

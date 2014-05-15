@@ -35,7 +35,7 @@ class RSS {
 		
 		var dir = file.path.directory();
 		if (dir == '') dir = 'articles';
-		var path = '$dir.rss'.normalize();
+		var path = '$dir/rss.xml'.normalize();
 		var html = '${file.path.withoutExtension()}/'.normalize();
 		var id = 'http://haxe.io/$html';
 		

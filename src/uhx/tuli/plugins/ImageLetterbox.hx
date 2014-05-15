@@ -27,7 +27,7 @@ class ImageLetterbox {
 	public function handler(file:TuliFile, content:String) {
 		var dom = content.parse();
 		
-		for (img in dom.find('p > img:not([alt*="inline"])')) {
+		for (img in dom.find('p > img:not([alt*="skip-lb"])')) {
 			//var src = Tuli.config.output + '/' + img.attr('src');
 			//var height = new haxe.imagemagick.Imagick(src.normalize()).height;
 			var caption = img.attr('title');

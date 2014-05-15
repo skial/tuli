@@ -26,6 +26,7 @@ class Markdown {
 	'ş' => '&#x015F;', '№' => '&#8470;',
 	'ê' => '&ecirc;', 'ä' => '&auml;',
 	'é' => '&eacute;', 'ø' => '&oslash;',
+	'ö' => '&ouml;',
 	'“'=>'&ldquo;', '”'=>'&rdquo;' ];
 
 	public function new(tuli:Class<Tuli>) {
@@ -48,6 +49,9 @@ class Markdown {
 			var tokens = parser.toTokens( ByteData.ofString( content ), file.path );
 			var resources = new Map<String, {url:String,title:String}>();
 			parser.filterResources( tokens, resources );
+			
+			if (file.extra.md == null) file.extra.md = { };
+			file.extra.md.resources = resources;
 			
 			var html = [for (token in tokens) parser.printHTML( token, resources )].join('');
 			
@@ -75,7 +79,7 @@ class Markdown {
 			
 			var content = '';
 			
-			var tuliFiles = Tuli.config.files.filter( function(f) return [location, file.path].indexOf( f.path ) > -1 );
+			var tuliFiles = Tuli.config.files.filter( function(f) return [location].indexOf( f.path ) > -1 );
 			for (tuliFile in tuliFiles) tuliFile.ignore = true;
 			
 			if (!fileCache.exists( location )) {
@@ -84,7 +88,7 @@ class Markdown {
 					content = Tuli.fileCache.get(location);
 					fileCache.set(location, content);
 				} else {
-					content = File.getContent( (Tuli.config.input + location).normalize() );
+					content = File.getContent( (Tuli.config.input + '/${location}').normalize() );
 					Tuli.fileCache.set( location, content );
 					fileCache.set( location, content );
 				}
@@ -97,6 +101,21 @@ class Markdown {
 			dom.find('content[select="markdown"]').replaceWith( null, dtx.Tools.parse( html ) );
 			var edit = dom.find('.article.details div:last-of-type a');
 			edit.setAttr('href', (edit.attr('href') + file.path).normalize());
+			
+			var handle = '@skial';
+			var handleUrl = 'http://twitter.com/skial';
+			if (resources.exists('_author')) {
+				handle = resources.get('_author').title;
+				handleUrl = resources.get('_author').url;
+			}
+			
+			var details = dom.find('.article.details div a[rel*="author"]');
+			if (details.length > 0) {
+				details.setAttr('href', handleUrl);
+				details.setAttr('title', handle);
+			}
+			
+			
 			content = dom.html();
 			
 			// Add the new file location and contents into Tuli's `fileCache` which
@@ -109,7 +128,11 @@ class Markdown {
 					tuliFile[0].spawned.push( spawned );
 					Tuli.config.spawn.push( {
 						size: 0,
-						extra: {},
+						extra: {
+							md: {
+								resources: resources,
+							}
+						},
 						spawned: [],
 						ext: 'html',
 						ignore: false,
@@ -123,6 +146,8 @@ class Markdown {
 			}
 			
 		}
+		
+		file.ignore = true;
 		
 		return content;
 	}

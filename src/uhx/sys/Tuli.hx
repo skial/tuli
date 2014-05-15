@@ -402,7 +402,7 @@ class Tuli {
 			
 			var directory = Path.join( parts );
 			for (part in missing) {
-				directory = '$directory/$part/'.normalize();
+				directory = '$directory/$part/'.normalize().replace(' ', '-');
 				if (!directory.exists()) FileSystem.createDirectory( directory );
 			}
 			
@@ -411,7 +411,7 @@ class Tuli {
 	
 	private static function save(file:TuliFile) {
 		var input = (config.input + '/${file.path}').normalize();
-		var output = (config.output + '/${file.path}').normalize();
+		var output = (config.output + '/${file.path}').normalize().replace(' ', '-');
 		var newer = isNewer(file);
 		
 		if (!file.ignore) {
