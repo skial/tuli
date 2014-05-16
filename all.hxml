@@ -49,3 +49,8 @@
 
 -neko titlelinks.n
 -main uhx.tuli.plugins.TitleLinks
+
+--next
+
+-neko imagemeta.n
+-main uhx.tuli.plugins.ImageMeta
