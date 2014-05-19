@@ -94,6 +94,11 @@ class ImportHTML {
 									var data = JsonSelect.find(Tuli.config, selector);
 									trace( data.length );
 									
+								case 'data-match', 'match':
+									if (content.attr(att).indexOf( 'remove' ) > -1) {
+										items.remove();
+									}
+									
 								case _:
 									content = content.replaceWith(null, items);
 									

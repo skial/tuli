@@ -54,3 +54,8 @@
 
 -neko imagemeta.n
 -main uhx.tuli.plugins.ImageMeta
+
+--next
+
+-neko imageresize.n
+-main uhx.tuli.plugins.ImageResize
