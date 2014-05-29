@@ -1,5 +1,6 @@
 package uhx.tuli.plugins;
 
+import byte.ByteData;
 import uhx.sys.Tuli;
 
 using Detox;
@@ -22,9 +23,21 @@ class CodeHighlighter {
 		var blocks = dom.find( 'code' );
 		
 		for (code in blocks) {
-			var lang = code.attr( 'language' );
-			if (lang != '' && Lang.uage.exists( lang )) {
-				code = code.replaceWith( null, Lang.uage.get( lang ).printHTML( code.text() ).parse() );
+			
+			var hasLang = code.hasClass( 'language' );
+			var lang = null;
+			
+			if (hasLang) {
+				lang = [for (k in Lang.uage.keys()) if (code.hasClass( k ) ) k][0];
+			}
+			
+			if (hasLang && lang != null) {
+				var parser = Lang.uage.get( lang );
+				var tokens = parser.toTokens( ByteData.ofString( code.text() ), 'code-highlighter-$lang' );
+				var html = [for (token in tokens) parser.printHTML( token )].join( '\n' );
+				
+				code.setText('');
+				code.append(null, html.parse());
 			}
 		}
 		

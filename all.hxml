@@ -60,7 +60,7 @@
 -neko imageresize.n
 -main uhx.tuli.plugins.ImageResize
 
-#--next
+--next
 
-#-neko codehighlighter.n
-#-main uhx.tuli.plugins.CodeHighlighter
+-neko codehighlighter.n
+-main uhx.tuli.plugins.CodeHighlighter

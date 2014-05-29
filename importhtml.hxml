@@ -1,0 +1,15 @@
+-lib tuli
+-lib uhu
+-lib mo
+-lib detox
+-lib beanhx
+-lib tjson
+-lib selecthxml
+-lib imagemagick
+-debug
+#-dce no
+-cp src
+
+-neko importhtml.n
+-main uhx.tuli.plugins.ImportHTML
+
