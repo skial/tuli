@@ -78,7 +78,7 @@ class SocialMetadata {
 			var alt = dom.find('img[alt*="social"]');
 			var cardType = 'summary';
 			
-			/*var images = [];
+			var images = [];
 			for (id in ['property', 'name']) {
 				for (meta in dom.find('meta[$id*="image"]')) {
 					if (meta.attr('content') == '') images.push( meta );
@@ -96,7 +96,7 @@ class SocialMetadata {
 			
 			dom.find('meta[name="twitter:card"]').setAttr('content', cardType);
 			
-			for (image in images) image.setAttr('content', 'http://haxe.io/$img'.normalize());*/
+			for (image in images) image.setAttr('content', 'http://haxe.io/$img'.normalize());
 			
 			var url = dom.find('meta[property="og:url"]');
 			

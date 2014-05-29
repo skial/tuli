@@ -32,8 +32,6 @@ class ImageResize {
 		var mediaQueries = tokens.filter( function(t) {
 			return t.token.match(Keyword(AtRule(_, _, _)));
 		} );
-		trace( tokens );
-		trace( mediaQueries );
 		
 		return content;
 	}
