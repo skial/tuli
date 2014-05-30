@@ -64,3 +64,8 @@
 
 -neko codehighlighter.n
 -main uhx.tuli.plugins.CodeHighlighter
+
+--next
+
+-neko imagegroup.n
+-main uhx.tuli.plugins.ImageGroup
