@@ -1,4 +1,12 @@
 -lib klas
+-lib cmd
+-lib uhu
+-lib detox
+-lib tjson
+-lib imagemagick
+-lib hxparse
+-lib mo
 -cp src
--js bin/tuli.js
--main Main
+-neko run.n
+-D use-rtti-doc
+-main LibRunner

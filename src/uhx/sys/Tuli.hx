@@ -143,9 +143,10 @@ class Tuli {
 		
 		if (isSetup == null || isSetup == false) {
 			
-			if ( 'config.json'.exists() ) {
+			//if ( 'config.json'.exists() ) {
+			if ( config != null ) {
 				// Load `config.json` if it exists.
-				config = Json.parse( File.getContent( 'config.json' ) );
+				//config = Json.parse( File.getContent( 'config.json' ) );
 				
 				// Clear the list of generated files.
 				config.spawn = [];
@@ -176,7 +177,7 @@ class Tuli {
 				}
 				
 				if (config.input != null) {
-					input( config.input = config.input.fullPath().normalize() );
+					/*input( */config.input = config.input.fullPath().normalize()/* )*/;
 				}
 				
 			}
