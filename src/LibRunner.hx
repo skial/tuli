@@ -84,14 +84,13 @@ class LibRunner implements Klas {
 		if (file.exists()) {
 			Tuli.config = Json.parse( File.getContent( file ) );
 		} else {
-			Sys.println( 'A configuration file could not be found at $directory, use -f <path> to set one.' );
+			Sys.println( 'A configuration file could not be found in $directory, please use -f <path> to set one.' );
 			return;
 		}
 		
 		if (global) makeGlobal();
 		
 		if (clean) {
-			Tuli.initialize();
 			runClean();
 		}
 		
