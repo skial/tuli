@@ -72,11 +72,14 @@ class LibRunner implements Klas {
 		} );
 		
 		if (set.length == 0) {
+			// Make update the default action.
 			update = true;
 		}
 		
 		directory = args[args.length - 1].normalize();
 		file = '$directory/$file'.normalize();
+		
+		Sys.setCwd( directory );
 		
 		if (file.exists()) {
 			Tuli.config = Json.parse( File.getContent( file ) );
@@ -85,19 +88,26 @@ class LibRunner implements Klas {
 			return;
 		}
 		
-		Tuli.initialize();
-		
 		if (global) makeGlobal();
-		if (clean) runClean();
+		
+		if (clean) {
+			Tuli.initialize();
+			runClean();
+		}
 		
 		if (build) {
+			Tuli.initialize();
 			runClean();
 			runBuild();
 		}
 		
-		if (update) runUpdate();
+		if (update) {
+			Tuli.initialize();
+			runUpdate();
+		}
 		
 		if (test) {
+			Tuli.initialize();
 			runUpdate();
 			serve();
 		}
@@ -114,8 +124,19 @@ class LibRunner implements Klas {
 		var path = Sys.environment().get( 'HAXEPATH' ).normalize();
 		
 		switch (Sys.systemName().toLowerCase()) {
+			case _.indexOf( 'windows' ) > -1 => true if ('$path/tuli.bat'.normalize().exists()):
+				Sys.println( 'Tuli is already global.' );
+				return;
+				
+			case _ if ('$path/tuli.bat'.normalize().exists()): 
+				Sys.println( 'Tuli is already global.' );
+				return;
+				
+		}
+		
+		switch (Sys.systemName().toLowerCase()) {
 			case _.indexOf( 'windows' ) > -1 => true:
-				File.saveContent( '$path/tuli.bat'.normalize(), 'echo off\r\nhaxelib run tuli %*' );
+				File.saveContent( '$path/tuli.bat'.normalize(), '@echo off\r\nhaxelib run tuli %*' );
 				
 			case _.indexOf( 'linux' ) > -1 => true:
 				File.saveContent( '$path/tuli.sh'.normalize(), '# Bash\r\n#!/bin/sh\r\nhaxelib run tuli $@' );
