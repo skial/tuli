@@ -99,7 +99,8 @@ class Markdown {
 			var dom = content.parse();
 			
 			dom.find('content[select="markdown"]').replaceWith( null, dtx.Tools.parse( html ) );
-			var edit = dom.find('.article.details div:last-of-type a');
+			
+			var edit = dom.find('article > aside > a:last-of-type');
 			edit.setAttr('href', (edit.attr('href') + file.path).normalize());
 			
 			var handle = '@skial';
@@ -109,12 +110,27 @@ class Markdown {
 				handleUrl = resources.get('_author').url;
 			}
 			
-			var details = dom.find('.article.details div a[rel*="author"]');
+			var details = dom.find('a[rel*="author"]');
 			if (details.length > 0) {
 				details.setAttr('href', handleUrl);
 				details.setAttr('title', handle);
 			}
 			
+			var time = dom.find('.details time');
+			if (time.length > 0) {
+				time.setAttr( 'datetime', DateTools.format(file.stats.ctime, '%Y-%m-%d %H:%M') );
+				// For some reason file.stats.ctime.getDate() throws an error...
+				var day = Std.parseInt( DateTools.format(file.stats.ctime, '%d') );
+				var value = DateTools.format(file.stats.ctime, '%A :: %B %Y');
+				// http://www.if-not-true-then-false.com/2010/php-1st-2nd-3rd-4th-5th-6th-php-add-ordinal-number-suffix/
+				value = value.replace( '::', switch (day % 10) {
+					case 1: '${day}st';
+					case 2: '${day}nd';
+					case 3: '${day}rd';
+					case _: '${day}th';
+				} );
+				time.setText( value );
+			}
 			
 			content = dom.html();
 			
