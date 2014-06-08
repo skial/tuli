@@ -6,6 +6,7 @@
 -lib imagemagick
 -lib hxparse
 -lib mo
+-lib tappi
 -cp src
 -neko run.n
 -D use-rtti-doc

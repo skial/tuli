@@ -164,15 +164,20 @@ class Tuli {
 					secrets = { };
 				}
 				
-				if (config.plugins.length > 0) for (plugin in config.plugins) {
-					// field equals the haxelib name
-					for (name in plugin.fields()) {
-						var field:Array<String> = plugin.field( name );
-						if (field.length == 0) {
-							loadPlugin( name );
-						} else for (value in field) {
-							loadPlugin( value, name );
-						}
+				if (config.plugins.length > 0) {
+					Tappi.haxelib = true;
+					
+					for (plugin in config.plugins) for (name in plugin.fields()) {
+						// field equals the haxelib name
+						Tappi.libraries.push( name );
+						Tappi.libraries = Tappi.libraries.concat( (plugin.field( name ):Array<String>) );
+					}
+					
+					Tappi.load();
+					
+					for (id in Tappi.classes.keys()) {
+						var cls:Class<TuliPlugin> = cast Tappi.classes.get( id );
+						instances.set( id, Type.createInstance( cls, [Tuli] ));
 					}
 				}
 				
@@ -533,59 +538,6 @@ class Tuli {
 		}
 		
 		return result;
-	}
-	
-	private static function loadPlugin(plugin:String, ?haxelib:String = null):Void {
-		var path = '';
-		
-		if (!classes.exists( plugin )) {
-			
-			// First look for haxelib libraries
-			var process = new Process('haxelib', ['path', haxelib == null ? plugin : haxelib]);
-			var output = process.stdout.readAll().toString();
-			
-			process.exitCode();
-			process.close();
-			
-			var parts = output.split('\n');
-			for (part in parts) {
-				var code = part.charCodeAt(0);
-				
-				if (code >= '0'.code && code <= '9'.code || code >= 'A'.code && code <= 'Z'.code || code >= 'a'.code && code <= 'z'.code) {
-					part = part.rtrim().normalize();
-					
-					if (part.exists()) {
-						// Go up a directory as `haxelib path` returns the `src` directory.
-						parts = part.removeTrailingSlashes().split('/');
-						parts.pop();
-						path = parts.join('/');
-						break;
-						
-					}
-					
-				}
-				
-			}
-			
-			// Look for the plugin locally.
-			if (path == '') if ('${Sys.getCwd()}/$plugin.n'.normalize().exists()) {
-				path = Sys.getCwd();
-			}
-			
-			if (path != '' && '$path/$plugin.n'.normalize().exists()) {
-				Loader.local().addPath( '$path/' );
-				Sys.println( 'Loading $plugin.n' );
-				var module = Loader.local().loadModule( '$path/$plugin' );
-				var cls:Class<TuliPlugin> = module.execute();
-				
-				classes.set( plugin, cls );
-				instances.set( plugin, Type.createInstance( cls, [Tuli] ));
-				
-			} else {
-				trace( 'The $plugin plugin could not be found.' );
-			}
-			
-		}
 	}
 	
 }

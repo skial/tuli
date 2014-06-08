@@ -36,6 +36,7 @@
     <library name="imagemagick" />
     <library name="hxparse" />
     <library name="mo" />
+    <library name="tappi" />
   </haxelib>
   <!-- Class files to compile (other referenced classes will automatically be included) -->
   <compileTargets>

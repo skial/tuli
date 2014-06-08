@@ -7,7 +7,6 @@
 -lib hxparse
 -lib selecthxml
 -lib tappi
--lib imagemagick
 -cp src
 -neko run.n
 -D openfl
