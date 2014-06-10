@@ -101,7 +101,6 @@ class Tuli {
 	
 	// Register a callback that is interested in a certain extension.
 	// This allows for multiply extensions to deal with the same file.
-	// Call via your `hxml` file `--macro uhx.macro.Tuli.onExtension('html', pack.age.Class.callback)`
 	public static function onExtension(extension:String, callback:TuliFile->String->String, ?when:TuliState):Void {
 		var map = (when == null || when == Before) ? extPluginsBefore : extPluginsAfter;
 		var cbs = map.exists( extension ) ? map.get( extension ) : [];
@@ -114,7 +113,6 @@ class Tuli {
 	
 	// Register a callback that adds data to the global `config.data` object.
 	// This is currently not saved, so the data has to be recreated on each call.
-	// Call via your `hxml` file `--macro uhx.macro.Tuli.onData(pack.age.Class.callback)`
 	public static function onData(callback:Dynamic->Dynamic, ?when:TuliState):Void {
 		if (when == null) when = Before;
 		switch (when) {
@@ -295,8 +293,20 @@ class Tuli {
 			for (i in 0...files.length) fileCache.set( files[i].path, contents[i] );
 		}
 		
-		// Send cached files to content plugins for modification.
 		for (extension in extPluginsAfter.keys()) {
+			var cbs = extPluginsAfter.get( extension );
+			var files = config.spawn.filter( function(s) return s.ext == extension && fileCache.exists( s.path ) );
+			var contents = files.map( function(s) return fileCache.get( s.path ) );
+			
+			for (i in 0...files.length) for (cb in cbs) {
+				contents[i] = cb( files[i], contents[i] );
+			}
+			
+			for (i in 0...files.length) fileCache.set( files[i].path, contents[i] );
+		}
+		
+		// Send cached files to content plugins for modification.
+		/*for (extension in extPluginsAfter.keys()) {
 			var cbs = extPluginsAfter.get( extension );
 			//var files = [for (key in fileCache.keys()) key].filter( function(s) return files.indexOf(s) == -1 && s.extension() == extension );
 			var files = [for (key in fileCache.keys()) key]
@@ -310,7 +320,7 @@ class Tuli {
 			}
 			
 			for (i in 0...files.length) fileCache.set( files[i].path, contents[i] );
-		}
+		}*/
 		
 		// Ignore extensions which have been added by plugins.
 		if (config.ignore != null && config.ignore.length > 0) {
@@ -340,6 +350,7 @@ class Tuli {
 			}
 		}
 		for (tr in toRemove) config.files.remove( tr );
+		
 		var toRemove = [];
 		for (file in config.spawn) {
 			if (file.extra.github == null || file.extra.github.contributors == null) {
