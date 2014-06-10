@@ -25,7 +25,7 @@ class TitleLinks {
 	public function handler(file:TuliFile, content:String) {
 		var dom = content.parse();
 		
-		for (header in dom.find('article > section > h2')) {
+		for (header in dom.find('article section > h2')) {
 			var text = header.text();
 			var link = text.replace(' ', '-').replace('.', '-');
 			header = header.replaceWith(null, '<h2><a href="#$link" id="$link" type="text/html"><span></span></a>$text</h2>'.parse());

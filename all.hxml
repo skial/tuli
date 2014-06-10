@@ -69,3 +69,8 @@
 
 -neko imagegroup.n
 -main uhx.tuli.plugins.ImageGroup
+
+--next
+
+-neko tablecontents.n
+-main uhx.tuli.plugins.TableContents
