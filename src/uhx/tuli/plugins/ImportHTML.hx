@@ -15,8 +15,8 @@ using sys.FileSystem;
  */
 class ImportHTML {
 
-	public static var partials:Array<TuliFile> = [];
-	public static var templates:Array<TuliFile> = [];
+	public static var partials:Map<String, TuliFile> = new Map();
+	public static var templates:Map<String, TuliFile> = new Map();
 	
 	public static function main() return ImportHTML;
 	
@@ -33,10 +33,12 @@ class ImportHTML {
 		var isPartial = head.length == 0;
 		var hasInjectPoint = dom.find('content[select]').length > 0;
 		
-		if (isPartial) {
-			partials.push( file );
-		} else if (hasInjectPoint) {
-			templates.push( file );
+		if (isPartial && !partials.exists( file.path )) {
+			partials.set( file.path, file );
+			
+		} else if (hasInjectPoint && !templates.exists( file.path )) {
+			templates.set( file.path, file );
+			
 		}
 		
 		return content;
@@ -45,7 +47,8 @@ class ImportHTML {
 	public function finish() {
 		// Loop through and replace any `<content select="*" />` with
 		// a matching `<link rel="import" />`.
-		for (template in templates) {
+		for (key in templates.keys()) {
+			var template = templates.get( key );
 			var output = '${Tuli.config.output}/${template.path}'.normalize();
 			//var skip = FileSystem.exists( output ) && template.stats != null && FileSystem.stat( output ).mtime.getTime() < template.stats.mtime.getTime();
 			//var skip = template.isNewer();
@@ -64,6 +67,7 @@ class ImportHTML {
 						var partial = Tuli.fileCache.get( key ).parse();
 						
 						content = content.replaceWith(null, partial.first().children());
+						content.removeFromDOM();
 						
 					} else {
 						// You have to be fecking difficult, we have to
@@ -77,7 +81,6 @@ class ImportHTML {
 				// Find any remaining `<content />` and try filling them
 				// with anything that matches their own selector.
 				contents = dom.find('content[select]:not(content[targets])');
-				
 				
 				for (content in contents) {
 					var selector = content.get('select');
@@ -110,6 +113,8 @@ class ImportHTML {
 							content = content.replaceWith(items.text().parse());
 						}*/
 					//}
+					
+					content.removeFromDOM();
 				}
 				
 				// Remove all '<content />` from the DOM.
