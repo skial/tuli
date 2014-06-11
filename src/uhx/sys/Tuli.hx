@@ -45,12 +45,11 @@ typedef TuliFile = {
 	var ext:String;
 	var path:String;
 	var size:Int;
-	var created:String;
-	var modified:String;
+	var created:Void->Date;
+	var modified:Void->Date;
 	var ignore:Bool;
 	var extra:Dynamic;
 	var spawned:Array<String>;
-	@:optional var stats:FileStat;
 }
 
 typedef TuliSpawn = {>TuliFile,
@@ -218,28 +217,33 @@ class Tuli {
 			config.files.remove( missing );
 		}
 		
-		for (file in config.files) {
-			var stats = '$path/${file.path}'.stat();
-			file.size = stats.size;
-			file.modified = asISO8601(stats.mtime);
-			file.stats = stats;
-		}
-		
 		config.files = config.files.concat( [for (newItem in newItems) if (!'$path/$newItem'.isDirectory()) {
-			var stats = '$path/$newItem'.stat();
+			//var stats = '$path/$newItem'.stat();
 			{
 				name: newItem.withoutExtension().withoutDirectory(),
 				ext: newItem.extension(),
 				path: newItem,
-				size: stats.size,
-				created: asISO8601(stats.ctime),
-				modified: asISO8601(stats.mtime),
+				//size: stats.size,
+				size: null,
+				//created: asISO8601(stats.ctime),
+				created: null,
+				//modified: asISO8601(stats.mtime),
+				modified: null,
 				ignore: false, 
 				spawned: [],
 				extra: { },
-				stats: stats,
+				//stats: stats,
 			}
 		}] );
+		
+		for (file in config.files) {
+			var stats = '$path/${file.path}'.stat();
+			file.size = stats.size;
+			file.created = getCreationDate.bind( file );
+			//file.modified = asISO8601(stats.mtime);
+			file.modified = getModifiedDate.bind( file );
+			//file.stats = stats;
+		}
 		
 		// Set any file matching `config.ignore` with its extension
 		// to be ignored.
@@ -516,8 +520,10 @@ class Tuli {
 			spawned: [],
 			ignore: false,
 			ext: path.extension(),
-			created: asISO8601(Date.now()),
-			modified: asISO8601(Date.now()),
+			//created: asISO8601(Date.now()),
+			created: Date.now,
+			//modified: asISO8601(Date.now()),
+			modified: Date.now,
 			name: path.withoutDirectory().withoutExtension(),
 		}
 	}
@@ -538,17 +544,79 @@ class Tuli {
 			result = true;
 			
 		} else {
-			if (file.stats != null && than.stats != null) {
-				result = file.stats.mtime.getTime() > than.stats.mtime.getTime();
+			//if (file.stats != null && than.stats != null) {
+				result = file.modified().getTime() > than.modified().getTime();
 				
-			} else if(input.exists()) {
+			/*} else if(input.exists()) {
 				result = input.stat().mtime.getTime() > output.stat().mtime.getTime();
 				
-			}
+			}*/
 			
 		}
 		
 		return result;
+	}
+	
+	public static function getCreationDate(file:TuliFile):Date {
+		var path = '${config.input}/${file.path}';
+		
+		if (file == null) {
+			file.created = function() return Date.now();
+			return file.created();
+		}
+		//if (file.created == null) {
+			if (config.extra.git) {
+				var process = new Process('git', ['log', '--pretty=format:%at', '--diff-filter=A', '--', path]);
+				var output = process.stdout.readAll().toString();
+				process.exitCode();
+				process.close();
+				
+				if (output.trim() != '') {
+					file.created = function() return Date.fromTime( DateTools.seconds( Std.parseFloat( output ) ) );
+					
+				} else {
+					file.created = function() return path.stat().ctime;
+					
+				}
+				
+			} else {
+				file.created = function() return path.stat().ctime;
+				
+			}
+		//}
+		
+		return file.created();
+	}
+	
+	public static function getModifiedDate(file:TuliFile):Date {
+		var path = '${config.input}/${file.path}';
+		
+		if (file == null) {
+			file.modified = function() return Date.now();
+			return file.modified();
+		}
+		//if (file.modified == null) {
+			if (config.extra.git) {
+				var process = new Process('git', ['log', '-1', '--pretty=format:%ct', '--diff-filter=M', '--', path]);
+				var output = process.stdout.readAll().toString();
+				process.exitCode();
+				process.close();
+				
+				if (output.trim() != '') {
+					file.modified = function() return Date.fromTime( DateTools.seconds( Std.parseFloat( output ) ) );
+					
+				} else {
+					file.modified = function() return path.stat().mtime;
+					
+				}
+				
+			} else {
+				file.modified = function() return path.stat().mtime;
+				
+			}
+		//}
+		
+		return file.modified();
 	}
 	
 }

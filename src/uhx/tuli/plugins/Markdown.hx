@@ -40,7 +40,8 @@ class Markdown {
 		// The output location to save the generated html.
 		var spawned = '${file.path.withoutExtension()}/index.html'.normalize();
 		var output = '${Tuli.config.output}/$spawned';
-		var skip = FileSystem.exists( output ) && file.stats.mtime.getTime() < FileSystem.stat( output ).mtime.getTime();
+		//var skip = FileSystem.exists( output ) && file.stats.mtime.getTime() < FileSystem.stat( output ).mtime.getTime();
+		var skip = FileSystem.exists( output ) && file.modified().getTime() < FileSystem.stat( output ).mtime.getTime();
 		
 		if (!skip) {
 			for (key in characters.keys()) content = content.replace(key, characters.get(key));
@@ -119,10 +120,12 @@ class Markdown {
 					ignore: false,
 					path: spawned,
 					parent: file.path,
-					created: Tuli.asISO8601(Date.now()),
-					modified: Tuli.asISO8601(Date.now()),
+					//created: Tuli.asISO8601(Date.now()),
+					created: file.created,
+					//modified: Tuli.asISO8601(Date.now()),
+					modified: file.modified,
 					name: spawned.withoutDirectory().withoutExtension(),
-					stats: file.stats,
+					//stats: file.stats,
 				} );
 			}
 			

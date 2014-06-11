@@ -80,10 +80,13 @@ class RSS {
 				domEntry.find('link').setText( id );
 				domEntry.find('title').setText( title );
 				domEntry.find('description').setText( dom.find('p').first().text() );
-				domEntry.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				//domEntry.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				domEntry.find('pubDate').setText( DateTools.format( file.created(), '%a, %d %b %Y %H:%M:%S GMT' ) );
 				
-				domFeed.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
-				domFeed.find('lastBuildDate').setText( DateTools.format( file.stats.mtime, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				//domFeed.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				domFeed.find('pubDate').setText( DateTools.format( file.created(), '%a, %d %b %Y %H:%M:%S GMT' ) );
+				//domFeed.find('lastBuildDate').setText( DateTools.format( file.stats.mtime, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				domFeed.find('lastBuildDate').setText( DateTools.format( file.modified(), '%a, %d %b %Y %H:%M:%S GMT' ) );
 				domFeed.find('ttl').next().setAttr('href', 'http://haxe.io/$path');
 				
 				domFeed.find('channel').append( null, domEntry );

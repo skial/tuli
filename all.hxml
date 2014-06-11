@@ -74,3 +74,8 @@
 
 -neko tablecontents.n
 -main uhx.tuli.plugins.TableContents
+
+--next
+
+-neko frontpage.n
+-main uhx.tuli.plugins.FrontPage

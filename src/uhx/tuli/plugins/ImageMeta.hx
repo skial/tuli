@@ -55,7 +55,7 @@ class ImageMeta {
 				
 			} catch (e:Dynamic) {
 				// image probably couldnt be loaded...
-				trace( e );
+				// trace( e );
 			}
 		}
 		

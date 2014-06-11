@@ -33,7 +33,17 @@ class ImageResize {
 			return t.token.match(Keyword(AtRule(_, _, _)));
 		} );
 		
-		return content;
+		for (mq in mediaQueries) {
+			switch( mq.token ) {
+				case Keyword(AtRule(n, q, t)):
+					trace(n, q);
+					
+				case _:
+					
+			}
+		}
+		
+		return [for (token in tokens) parser.printString( token )].join('\r\n');
 	}
 	
 }

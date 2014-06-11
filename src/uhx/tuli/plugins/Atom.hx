@@ -25,7 +25,7 @@ class Atom {
 		Tuli.onExtension('md', handler, After);
 	}
 	
-	public function handler(file:TuliFile, content:String) {
+	public function handler(file:TuliFile, content:String):String {
 		if (feed == null) feed = File.getContent('${Tuli.config.input}/_feed.atom'.normalize());
 		if (entry == null) entry = File.getContent('${Tuli.config.input}/_entry.atom'.normalize());
 		
@@ -79,10 +79,13 @@ class Atom {
 				domEntry.find('title').setText( title );
 				domEntry.find('summary').setText( dom.find('p').first().text() );
 				domEntry.find('content').setAttr('src', id).setAttr('type','text/html');
-				domEntry.find('published').setText( Tuli.asISO8601( file.stats.ctime ) );
+				//domEntry.find('published').setText( Tuli.asISO8601( file.stats.ctime ) );
+				domEntry.find('published').setText( Tuli.asISO8601( file.created() ) );
 				
-				domFeed.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
-				domEntry.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
+				//domFeed.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
+				domFeed.find('updated').setText( Tuli.asISO8601( file.modified() ) );
+				//domEntry.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
+				domEntry.find('updated').setText( Tuli.asISO8601( file.modified() ) );
 				
 				domFeed.find('link').setAttr('href', 'http://haxe.io/$path');
 				domFeed.first().next().append( null, domEntry );

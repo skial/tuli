@@ -52,7 +52,8 @@ class ImportHTML {
 			var output = '${Tuli.config.output}/${template.path}'.normalize();
 			//var skip = FileSystem.exists( output ) && template.stats != null && FileSystem.stat( output ).mtime.getTime() < template.stats.mtime.getTime();
 			//var skip = template.isNewer();
-			var skip = FileSystem.exists( output ) && template.stats != null && FileSystem.stat( output ).mtime.getTime() < template.stats.mtime.getTime();
+			//var skip = FileSystem.exists( output ) && template.stats != null && FileSystem.stat( output ).mtime.getTime() < template.stats.mtime.getTime();
+			var skip = FileSystem.exists( output ) && FileSystem.stat( output ).mtime.getTime() < template.modified().getTime();
 			
 			if (!skip) {
 				var dom = Tuli.fileCache.get( template.path ).parse();
