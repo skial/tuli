@@ -49,8 +49,8 @@ class FrontPage {
 					$social
 				</li>
 				';
-				trace( file.created() );
-				trace( file.modified() );
+				/*trace( file.created() );
+				trace( file.modified() );*/
 				
 				var m = file.modified();
 				fragments.set( entry, m );
