@@ -39,7 +39,7 @@ class NoFollow {
 		for (a in links) {
 			
 			if (a.attr('rel').indexOf('nofollow') == -1) {
-				a.set('rel', (a.attr('rel') + ' nofollow').ltrim());
+				a.setAttr('rel', (a.attr('rel') + ' nofollow').ltrim());
 			}
 		}
 		

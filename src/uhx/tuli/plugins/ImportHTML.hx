@@ -60,7 +60,7 @@ class ImportHTML {
 				var contents = dom.find('content[select]');
 				
 				for (content in contents) {
-					var selector = content.get('select');
+					var selector = content.attr('select');
 					
 					if (selector.startsWith('#')) {
 						selector = selector.substring(1);
@@ -84,13 +84,13 @@ class ImportHTML {
 				contents = dom.find('content[select]:not(content[targets])');
 				
 				for (content in contents) {
-					var selector = content.get('select');
+					var selector = content.attr('select');
 					var items = dom.find( selector );
 					/*trace( selector );
 					trace( items );*/
 					//if (items.length > 0) {
-						for (att in content.attributes()) {
-							switch (att.trim()) {
+						for (att in content.attributes) {
+							switch (att.name) {
 								case 'data-text', 'text':
 									content = content.replaceWith(items.text().parse());
 									
@@ -99,7 +99,7 @@ class ImportHTML {
 									trace( data.length );
 									
 								case 'data-match', 'match':
-									if (content.attr(att).indexOf( 'remove' ) > -1) {
+									if (att.value.indexOf( 'remove' ) > -1) {
 										items.remove();
 									}
 									
