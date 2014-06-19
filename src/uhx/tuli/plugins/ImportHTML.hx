@@ -4,6 +4,7 @@ import sys.io.File;
 import uhx.sys.Tuli;
 import uhx.select.Json in JsonSelect;
 
+using Lambda;
 using Detox;
 using StringTools;
 using haxe.io.Path;
@@ -89,25 +90,23 @@ class ImportHTML {
 					/*trace( selector );
 					trace( items );*/
 					//if (items.length > 0) {
-						for (att in content.attributes) {
-							switch (att.name) {
-								case 'data-text', 'text':
-									content = content.replaceWith(items.text().parse());
-									
-								case 'data-json', 'json':
-									var data = JsonSelect.find(Tuli.config, selector);
-									trace( data.length );
-									
-								case 'data-match', 'match':
-									if (att.value.indexOf( 'remove' ) > -1) {
-										items.remove();
-									}
-									
-								case _:
-									content = content.replaceWith(null, items);
-									
-							}
-						}
+					var attributes = [for (a in content.attributes) a];
+					var isText = attributes.exists( function(attr) return attr.name == 'data-text' || attr.name == 'text' );
+					var isJson = attributes.exists( function(attr) return attr.name == 'data-json' || attr.name == 'json' );
+					var doRemove = attributes.exists( function(attr) return (attr.name == 'data-match' || attr.name == 'match') && attr.value == 'remove' );
+					
+					if (isText) {
+						content = content.replaceWith(items.text().parse());
+					} else if (isJson) {
+						var data = JsonSelect.find(Tuli.config, selector);
+						trace( data.length );
+					} else {
+						content = content.replaceWith(items);
+					}
+					
+					if (doRemove) {
+						items.remove();
+					}
 						/*if ([for (att in content.attributes()) att].indexOf('text') == -1) {
 							content = content.replaceWith(null, items);
 						} else {
@@ -115,7 +114,6 @@ class ImportHTML {
 						}*/
 					//}
 					
-					content.removeFromDOM();
 				}
 				
 				// Remove all '<content />` from the DOM.

@@ -12,7 +12,7 @@ import haxe.Json;
 import byte.ByteData;
 import sys.io.Process;
 import uhx.lexer.MarkdownParser;
-
+import uhx.Tappi;
 import Detox;
 import neko.vm.Loader;
 
@@ -653,7 +653,7 @@ private typedef Commit = {
 	};
 }
 
-class GithubInformation implements Klas {
+class GithubInformation /*implements Klas*/ {
 	
 	//#if macro
 	public static function initialize() {

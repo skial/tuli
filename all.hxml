@@ -6,6 +6,7 @@
 -lib tjson
 -lib selecthxml
 -lib imagemagick
+-lib tappi
 -debug
 #-dce no
 -cp src

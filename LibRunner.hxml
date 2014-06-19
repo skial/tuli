@@ -9,6 +9,4 @@
 -lib tappi
 -cp src
 -neko run.n
--D openfl
 -main LibRunner
---remap flash:flash
