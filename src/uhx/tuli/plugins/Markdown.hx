@@ -34,7 +34,7 @@ class Markdown {
 		untyped Tuli = tuli;
 		if (fileCache == null) fileCache = new Map();
 		
-		Tuli.onExtension('md', handler, After);
+		Tuli.onExtension('md', handler, Before);
 	}
 	
 	public function handler(file:TuliFile, content:String):String {
@@ -46,9 +46,7 @@ class Markdown {
 		
 		if (!skip) {
 			for (key in characters.keys()) content = content.replace(key, characters.get(key));
-			if (file.name == '29') {
-				File.saveContent( 'md.txt', content );
-			}
+			
 			var parser = new MarkdownParser();
 			var tokens = parser.toTokens( ByteData.ofString( content ), file.path );
 			var resources = new Map<String, {url:String,title:String}>();
@@ -58,9 +56,7 @@ class Markdown {
 			file.extra.md.resources = resources;
 			
 			var html = [for (token in tokens) parser.printHTML( token, resources )].join('');
-			if (file.name == '29') {
-				File.saveContent( 'md.html', html );
-			}
+			
 			// Look for a template in the markdown `[_template]: /path/file.html`
 			var template = resources.exists('_template') ? resources.get('_template') : { url:'', title:'' };
 			var location = if (template.url == '') {
@@ -84,7 +80,6 @@ class Markdown {
 			}
 			
 			var content = '';
-			
 			var tuliFiles = Tuli.config.files.filter( function(f) return [location].indexOf( f.path ) > -1 );
 			for (tuliFile in tuliFiles) tuliFile.ignore = true;
 			
@@ -103,11 +98,7 @@ class Markdown {
 			}
 			
 			var dom = content.parse();
-			if (file.name == '29') {
-				var t = html;
-				for (key in characters.keys()) t = t.replace(characters.get(key), key);
-				File.saveContent( 'md1.html', dtx.Tools.parse( t ).html() );
-			}
+			
 			for (key in characters.keys()) html = html.replace(characters.get(key), key);
 			dom.find('content[select="markdown"]').replaceWith( null, dtx.Tools.parse( html ) );
 			content = dom.html();
