@@ -100,11 +100,24 @@ class Tuli {
 	
 	// Register a callback that is interested in a certain extension.
 	// This allows for multiply extensions to deal with the same file.
-	public static function onExtension(extension:String, callback:TuliFile->String->String, ?when:TuliState):Void {
-		var map = (when == null || when == Before) ? extPluginsBefore : extPluginsAfter;
-		var cbs = map.exists( extension ) ? map.get( extension ) : [];
-		cbs.push( callback );
-		map.set( extension, cbs );
+	public static function onExtension(extension:String, callback:TuliFile-> String->String, ?when:TuliState):Void {
+		if (when == null) when = Before;
+		switch (when) {
+			case Before:
+				if (!extPluginsBefore.exists( extension )) {
+					extPluginsBefore.set( extension, [] );
+				}
+				
+				extPluginsBefore.get( extension ).push( callback );
+				
+			case After:
+				if (!extPluginsAfter.exists( extension )) {
+					extPluginsAfter.set( extension, [] );
+				}
+				
+				extPluginsAfter.get( extension ).push( callback );
+				
+		}
 	}
 	
 	private static var dataPluginsBefore:Array<Dynamic->Dynamic> = [];
@@ -172,7 +185,7 @@ class Tuli {
 					
 					Tappi.load();
 					
-					for (id in Tappi.classes.keys()) {
+					for (id in Tappi.libraries) if (Tappi.classes.exists( id )) {
 						var cls:Class<TuliPlugin> = cast Tappi.classes.get( id );
 						instances.set( id, Type.createInstance( cls, [Tuli] ));
 					}
