@@ -3,10 +3,10 @@ package uhx.sys;
 import dtx.Tools;
 import haxe.io.Eof;
 import hxparse.Lexer;
-import std.*;
-import haxe.*;
 import tjson.TJSON;
 import sys.FileStat;
+import uhx.tuli.util.File;
+import uhx.tuli.util.Spawn;
 
 import haxe.Json;
 import byte.ByteData;
@@ -22,7 +22,6 @@ using Reflect;
 using StringTools;
 using haxe.io.Path;
 using uhx.sys.Tuli;
-using sys.io.File;
 using sys.FileSystem;
 
 typedef TuliConfig = {
@@ -30,30 +29,14 @@ typedef TuliConfig = {
 	var output:String;
 	var ignore:Array<String>;
 	var extra:Dynamic;
-	var files:Array<TuliFile>;
+	var files:Array<File>;
 	var users:Array<TuliUser>;
-	var spawn:Array<TuliSpawn>;
+	var spawn:Array<Spawn>;
 	var plugins:Array<String>;
 }
 
 typedef TuliLibrary = {
 	
-}
-
-typedef TuliFile = {
-	var name:String;
-	var ext:String;
-	var path:String;
-	var size:Int;
-	var created:Void->Date;
-	var modified:Void->Date;
-	var ignore:Bool;
-	var extra:Dynamic;
-	var spawned:Array<String>;
-}
-
-typedef TuliSpawn = {>TuliFile,
-	var parent:String;
 }
 
 typedef TuliUser = {
@@ -88,19 +71,21 @@ typedef TuliPlugin = {
  */
 class Tuli {
 	
+	public static var configFile:File;
 	public static var config:TuliConfig;
+	public static var secretFile:File;
 	public static var secrets:Dynamic;
 	
 	// Every single file.
-	public static var files:Array<String> = [];
-	public static var fileCache:Map<String, String> = new Map();
+	public static var files:Array<File> = [];
+	//public static var fileCache:Map<String, String> = new Map();
 	
-	private static var extPluginsBefore:Map<String, Array<TuliFile->String->String>> = new Map();
-	private static var extPluginsAfter:Map<String, Array<TuliFile->String->String>> = new Map();
+	private static var extPluginsBefore:Map<String, Array<File->Void>> = new Map();
+	private static var extPluginsAfter:Map<String, Array<File->Void>> = new Map();
 	
 	// Register a callback that is interested in a certain extension.
 	// This allows for multiply extensions to deal with the same file.
-	public static function onExtension(extension:String, callback:TuliFile-> String->String, ?when:TuliState):Void {
+	public static function onExtension(extension:String, callback:File->Void, ?when:TuliState):Void {
 		if (when == null) when = Before;
 		switch (when) {
 			case Before:
@@ -153,10 +138,7 @@ class Tuli {
 		
 		if (isSetup == null || isSetup == false) {
 			
-			//if ( 'config.json'.exists() ) {
 			if ( config != null ) {
-				// Load `config.json` if it exists.
-				//config = Json.parse( File.getContent( 'config.json' ) );
 				
 				// Clear the list of generated files.
 				config.spawn = [];
@@ -166,12 +148,21 @@ class Tuli {
 				// If `output` is null set it to output provided to the compiler.
 				if (config.output != null) {
 					config.output = config.output.fullPath().normalize();
+					
 				}
 				
-				if ('secrets.json'.exists()) {
-					secrets = Json.parse( File.getContent( 'secrets.json' ) );
+				if (config.input != null) {
+					config.input = config.input.fullPath().normalize();
+					
+				}
+				
+				if ('${Sys.getCwd()}/secrets.json'.normalize().exists()) {
+					secretFile = new File( '${Sys.getCwd()}/secrets.json'.normalize() );
+					secrets = Json.parse( secretFile.content );
+					
 				} else {
 					secrets = { };
+					
 				}
 				
 				if (config.plugins.length > 0) {
@@ -189,10 +180,7 @@ class Tuli {
 						var cls:Class<TuliPlugin> = cast Tappi.classes.get( id );
 						instances.set( id, Type.createInstance( cls, [Tuli] ));
 					}
-				}
-				
-				if (config.input != null) {
-					/*input( */config.input = config.input.fullPath().normalize()/* )*/;
+					
 				}
 				
 			}
@@ -230,33 +218,11 @@ class Tuli {
 			config.files.remove( missing );
 		}
 		
-		config.files = config.files.concat( [for (newItem in newItems) if (!'$path/$newItem'.isDirectory()) {
-			//var stats = '$path/$newItem'.stat();
-			{
-				name: newItem.withoutExtension().withoutDirectory(),
-				ext: newItem.extension(),
-				path: newItem,
-				//size: stats.size,
-				size: null,
-				//created: asISO8601(stats.ctime),
-				created: null,
-				//modified: asISO8601(stats.mtime),
-				modified: null,
-				ignore: false, 
-				spawned: [],
-				extra: { },
-				//stats: stats,
-			}
-		}] );
-		
-		for (file in config.files) {
-			var stats = '$path/${file.path}'.stat();
-			file.size = stats.size;
-			file.created = getCreationDate.bind( file );
-			//file.modified = asISO8601(stats.mtime);
-			file.modified = getModifiedDate.bind( file );
-			//file.stats = stats;
-		}
+		files = config.files = config.files.concat( 
+			[for (newItem in newItems) if (!'$path/$newItem'.isDirectory()) {
+				new File( '$path/$newItem'.normalize() );
+			}]
+		);
 		
 		// Set any file matching `config.ignore` with its extension
 		// to be ignored.
@@ -266,21 +232,15 @@ class Tuli {
 		for (file in config.files) file.spawned = [];
 		
 		// Build `config.data` from the data plugins.
-		for (cb in dataPluginsBefore) {
-			config.extra = cb(config.extra);
-		}
+		for (cb in dataPluginsBefore) config.extra = cb(config.extra);
 		
 		// Send files to content plugins for modification.
 		for (extension in extPluginsBefore.keys()) {
 			var cbs = extPluginsBefore.get( extension );
 			var files = config.files.filter( function(s) return s.ext == extension );
-			var contents = files.map( function(s) return if (s.ext == 'html') loadHTML('$path/${s.path}') else '$path/${s.path}'.getContent() );
+			//var contents = files.map( function(s) return if (s.ext == 'html') loadHTML('$path/${s.path}') else '$path/${s.path}'.getContent() );
 			
-			for (i in 0...files.length) for (cb in cbs) {
-				contents[i] = cb(files[i], contents[i]);
-			}
-			
-			for (i in 0...files.length) fileCache.set( files[i].path, contents[i] );
+			for (file in files) for (cb in cbs) cb(file);
 		}
 		
 		// Last chance to modify files before the
@@ -301,63 +261,28 @@ class Tuli {
 		for (extension in extPluginsAfter.keys()) {
 			var cbs = extPluginsAfter.get( extension );
 			var files = config.files.filter( function(s) return s.ext == extension );
-			var contents = files.map( function(s) return if (fileCache.exists(s.path)) fileCache.get(s.path) else '${config.input}/${s.path}'.getContent() );
 			
-			for (i in 0...files.length) for (cb in cbs) {
-				contents[i] = cb(files[i], contents[i]);
-			}
-			
-			for (i in 0...files.length) fileCache.set( files[i].path, contents[i] );
+			for (file in files) for (cb in cbs) cb( file );
 		}
 		
 		for (extension in extPluginsAfter.keys()) {
 			var cbs = extPluginsAfter.get( extension );
-			var files = config.spawn.filter( function(s) return s.ext == extension && fileCache.exists( s.path ) );
-			var contents = files.map( function(s) return fileCache.get( s.path ) );
+			var files = config.spawn.filter( function(s) return s.ext == extension/* && fileCache.exists( s.path ) */);
 			
-			for (i in 0...files.length) for (cb in cbs) {
-				contents[i] = cb( files[i], contents[i] );
-			}
-			
-			for (i in 0...files.length) fileCache.set( files[i].path, contents[i] );
+			for (file in files) for (cb in cbs) cb( file );
 		}
-		
-		// Send cached files to content plugins for modification.
-		/*for (extension in extPluginsAfter.keys()) {
-			var cbs = extPluginsAfter.get( extension );
-			//var files = [for (key in fileCache.keys()) key].filter( function(s) return files.indexOf(s) == -1 && s.extension() == extension );
-			var files = [for (key in fileCache.keys()) key]
-				.filter( function(s) return !config.files.exists( function(f) return f.path == s ) && s.extension() == extension )
-				.map( function(s) return tempFile( s ) );
-			
-			var contents = files.map( function(s) return fileCache.get( s.path ) );
-			
-			for (i in 0...files.length) for (cb in cbs) {
-				contents[i] = cb(files[i], contents[i]);
-			}
-			
-			for (i in 0...files.length) fileCache.set( files[i].path, contents[i] );
-		}*/
 		
 		// Ignore extensions which have been added by plugins.
 		if (config.ignore != null && config.ignore.length > 0) {
-			files = files.filter( function(f) return config.ignore.indexOf( f.extension() ) == -1 );
+			files = files.filter( function(f) return config.ignore.indexOf( f.ext ) == -1 );
 		}
 		
-		// Last chance to modify `Tuli.fileCache` or `Tuli.file`.
+		// Last chance to modify anything.
 		for (cb in finishCallbacksAfter) cb();
 		
-		for (file in config.files) {
-			save( file );
-		}
-		
-		for (file in fileCache.keys()) {
-			var f = config.files.filter( function(f) return f.path == file )[0];
-			
-			if (f == null) f = tempFile( file );
-			
-			save( f );
-		}
+		// Lets save everything.
+		for (file in config.files) save( file );
+		for (file in config.spawn) save( file );
 		
 		// Remove all `file.stats` fields from the config file.
 		var toRemove = [];
@@ -377,7 +302,8 @@ class Tuli {
 		for (tr in toRemove) config.spawn.remove( tr );
 		
 		// Save the modified config file.
-		File.saveContent( 'config.json', TJSON.encode(config, 'fancy') );
+		configFile.content = TJSON.encode(config, 'fancy');
+		configFile.save();
 		
 	}
 	
@@ -443,30 +369,15 @@ class Tuli {
 		}
 	}
 	
-	private static function save(file:TuliFile) {
-		var input = (config.input + '/${file.path}').normalize();
-		var output = (config.output + '/${file.path}').normalize().replace(' ', '-');
+	private static function save(file:File) {
+		var input = file.path.normalize();
+		var output = file.path.replace(config.input, config.output).normalize().replace(' ', '-');
 		var newer = isNewer(file);
 		
 		if (!file.ignore) {
 			createDirectory( output );
+			file.save( output );
 			
-			if (!fileCache.exists( file.path )) {
-				
-				if (newer) {
-					File.copy( input, output );
-				}
-				
-			} else {
-				if (newer) {
-					if (file.ext == 'html') {
-						saveHTML( output, fileCache.get( file.path ) );
-					} else {
-						File.saveContent( output, fileCache.get( file.path ) );
-					}
-				}
-				fileCache.remove( file.path );
-			}
 		}
 	}
 	
@@ -511,7 +422,7 @@ class Tuli {
 		process.stdin.writeString( content );
 		process.exitCode();
 		process.close();*/
-		File.saveContent( path, content );
+		//File.saveContent( path, content );
 	}
 	
 	// This just spits out the correct format. Its not utc aware.
@@ -525,8 +436,8 @@ class Tuli {
 		return '$YYYY-${MM<10?"0"+MM:""+MM}-${DD<10?"0"+DD:""+DD}T${hh<10?"0"+hh:""+hh}:${mm<10?"0"+mm:""+mm}:${ss<10?"0"+ss:""+ss}Z';
 	}
 	
-	private static function tempFile(path:String):TuliFile {
-		return {
+	private static function tempFile(path:String):File {
+		/*return {
 			size: 0,
 			extra: {},
 			path: path,
@@ -538,10 +449,11 @@ class Tuli {
 			//modified: asISO8601(Date.now()),
 			modified: Date.now,
 			name: path.withoutDirectory().withoutExtension(),
-		}
+		}*/
+		return new File( (Tuli.config.input + '/$path').normalize() );
 	}
 	
-	public static function isNewer(file:TuliFile, ?than:TuliFile = null):Bool {
+	public static function isNewer(file:File, ?than:File = null):Bool {
 		if (than == null) than = file;
 		
 		var result = false;
@@ -558,7 +470,8 @@ class Tuli {
 			
 		} else {
 			//if (file.stats != null && than.stats != null) {
-				result = file.modified().getTime() > than.modified().getTime();
+				//result = file.modified().getTime() > than.modified().getTime();
+				result = file.modified.getTime() > than.modified.getTime();
 				
 			/*} else if(input.exists()) {
 				result = input.stat().mtime.getTime() > output.stat().mtime.getTime();
@@ -570,7 +483,7 @@ class Tuli {
 		return result;
 	}
 	
-	public static function getCreationDate(file:TuliFile):Date {
+	/*public static function getCreationDate(file:TuliFile):Date {
 		var path = '${config.input}/${file.path}';
 		
 		if (file == null) {
@@ -630,7 +543,7 @@ class Tuli {
 		//}
 		
 		return file.modified();
-	}
+	}*/
 	
 }
 

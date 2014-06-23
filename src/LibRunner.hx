@@ -82,7 +82,8 @@ class LibRunner implements Klas {
 		Sys.setCwd( directory );
 		
 		if (file.exists()) {
-			Tuli.config = Json.parse( File.getContent( file ) );
+			Tuli.configFile = new uhx.tuli.util.File( file );
+			Tuli.config = Json.parse( Tuli.configFile.content );
 		} else {
 			Sys.println( 'A configuration file could not be found in $directory, please use -f <path> to set one.' );
 			return;
