@@ -1,6 +1,7 @@
 package uhx.tuli.plugins;
 
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
 
 using Detox;
 using StringTools;
@@ -21,11 +22,11 @@ class TableContents {
 		Tuli.onExtension( 'html', handler, After );
 	}
 	
-	public function handler(file:TuliFile, content:String):String {
-		var dom = content.parse();
+	public function handler(file:File) {
+		var dom = file.content.parse();
 		var h2s = dom.find( 'h2' );
 		
-		return if (h2s.length > 0 && processed.indexOf( file.path ) == -1) {
+		if (h2s.length > 0 && processed.indexOf( file.path ) == -1) {
 			var side = dom.find( 'article aside' );
 			var table = '';
 			var title = '';
@@ -43,10 +44,7 @@ class TableContents {
 				processed.push( file.path );
 			}
 			
-			dom.html();
-			
-		} else {
-			content;
+			file.content = dom.html();
 			
 		}
 		
