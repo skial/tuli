@@ -1,7 +1,7 @@
 package uhx.tuli.plugins;
 
-import sys.io.File;
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
 
 using Detox;
 using StringTools;
@@ -22,8 +22,8 @@ class TitleLinks {
 		Tuli.onExtension( 'html', handler, After );
 	}
 	
-	public function handler(file:TuliFile, content:String) {
-		var dom = content.parse();
+	public function handler(file:File) {
+		var dom = file.content.parse();
 		
 		for (header in dom.find('article section > h2')) {
 			var text = header.text();
@@ -31,7 +31,7 @@ class TitleLinks {
 			header = header.replaceWith(null, '<h2><a href="#$link" id="$link" type="text/html"><span></span></a>$text</h2>'.parse());
 		}
 		
-		return dom.html();
+		file.content = dom.html();
 	}
 	
 }
