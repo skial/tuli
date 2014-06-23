@@ -1,12 +1,12 @@
 package uhx.tuli.plugins;
 
-import sys.io.File;
 import uhx.sys.Tuli;
 
 using Detox;
 using StringTools;
 using haxe.io.Path;
 using sys.FileSystem;
+using uhx.tuli.util.File;
 
 /**
  * ...
@@ -14,24 +14,25 @@ using sys.FileSystem;
  */
 class Atom {
 
-	private static var feed:String;
-	private static var entry:String;
+	private static var feed:File;
+	private static var entry:File;
 	private static var xmlCache:Map<String, DOMCollection> = new Map();
 	
 	public static function main() return Atom;
 	
 	public function new(tuli:Class<Tuli>) {
 		untyped Tuli = tuli;
+		
+		if (feed == null) feed = new File( '${Tuli.config.input}/_feed.atom'.normalize() );
+		if (entry == null) entry = new File( '${Tuli.config.input}/_entry.atom'.normalize() );
+		
 		Tuli.onExtension('md', handler, After);
 	}
 	
-	public function handler(file:TuliFile, content:String):String {
-		if (feed == null) feed = File.getContent('${Tuli.config.input}/_feed.atom'.normalize());
-		if (entry == null) entry = File.getContent('${Tuli.config.input}/_entry.atom'.normalize());
-		
-		for (f in Tuli.config.files.filter(function(f) {
+	public function handler(file:File) {
+		for (file in Tuli.config.files.filter(function(f) {
 			return ['_feed.atom', '_entry.atom'].indexOf(f.path) != -1;
-		} )) f.ignore = true;
+		} )) file.ignore = true;
 		
 		var dir = file.path.directory();
 		if (dir == '') dir = 'articles';
@@ -41,15 +42,16 @@ class Atom {
 		
 		var xmlFeed = null;
 		
-		if (Tuli.fileCache.exists( path )) {
-			xmlFeed = Tuli.fileCache.get( path );
+		//if (Tuli.fileCache.exists( path )) {
+		if (Tuli.files.exists( path )) {
+			xmlFeed = Tuli.files.get( path );
 			
 		} else {
 			xmlFeed = feed;
 			
 		}
 		
-		if (xmlFeed.indexOf(id) == -1 && Tuli.fileCache.exists( '${html}index.html' )) {
+		if (xmlFeed.content.indexOf(id) == -1 && Tuli.files.exists( '${html}index.html' )) {
 			var dom = null;
 			var domFeed = null;
 			var domEntry = null;
@@ -58,7 +60,7 @@ class Atom {
 				dom = xmlCache.get( html + 'index.html' );
 				
 			} else {
-				dom = Tuli.fileCache.get( html + 'index.html' ).parse();
+				dom = Tuli.files.get( html + 'index.html' ).content.parse();
 				
 			}
 			
@@ -66,26 +68,23 @@ class Atom {
 				domFeed = xmlCache.get( path );
 				
 			} else {
-				domFeed = xmlFeed.parse();
+				domFeed = xmlFeed.content.parse();
 				
 			}
 			
 			var title = dom.find('h1').first().text().trim();
 			
 			if (title != '') {
-				domEntry = entry.parse();
+				domEntry = entry.content.parse();
 				
 				domEntry.find('id').setText( id );
 				domEntry.find('title').setText( title );
 				domEntry.find('summary').setText( dom.find('p').first().text() );
 				domEntry.find('content').setAttr('src', id).setAttr('type','text/html');
-				//domEntry.find('published').setText( Tuli.asISO8601( file.stats.ctime ) );
-				domEntry.find('published').setText( Tuli.asISO8601( file.created() ) );
+				domEntry.find('published').setText( Tuli.asISO8601( file.created ) );
 				
-				//domFeed.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
-				domFeed.find('updated').setText( Tuli.asISO8601( file.modified() ) );
-				//domEntry.find('updated').setText( Tuli.asISO8601( file.stats.mtime ) );
-				domEntry.find('updated').setText( Tuli.asISO8601( file.modified() ) );
+				domFeed.find('updated').setText( Tuli.asISO8601( file.modified ) );
+				domEntry.find('updated').setText( Tuli.asISO8601( file.modified ) );
 				
 				domFeed.find('link').setAttr('href', 'http://haxe.io/$path');
 				domFeed.first().next().append( null, domEntry );
@@ -105,10 +104,11 @@ class Atom {
 				}
 				
 				for (key in Markdown.characters.keys()) {
-					result = result.replace(Markdown.characters.get( key ), key );
+					result = result.replace( Markdown.characters.get( key ), key );
 				}
 				
-				Tuli.fileCache.set( path, result );
+				//Tuli.fileCache.set( path, result );
+				xmlFeed.content = result;
 				
 			}
 			
@@ -122,8 +122,6 @@ class Atom {
 		id = null;
 		path = null;
 		xmlFeed = null;
-		
-		return content;
 	}
 	
 }

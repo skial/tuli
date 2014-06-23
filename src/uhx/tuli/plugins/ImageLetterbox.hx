@@ -1,7 +1,7 @@
 package uhx.tuli.plugins;
 
-import sys.io.File;
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
 
 using Detox;
 using StringTools;
@@ -24,8 +24,8 @@ class ImageLetterbox {
 	
 	private static var counter:Int = 0;
 	
-	public function handler(file:TuliFile, content:String) {
-		var dom = content.parse();
+	public function handler(file:File) {
+		var dom = file.content.parse();
 		
 		for (img in dom.find( 'img[alt*="letterbox"]' )) {
 			var caption = img.attr( 'title' );
@@ -33,7 +33,7 @@ class ImageLetterbox {
 			counter++;
 		}
 		
-		return dom.html();
+		file.content = dom.html();
 	}
 	
 }

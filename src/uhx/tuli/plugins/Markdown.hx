@@ -1,15 +1,17 @@
 package uhx.tuli.plugins;
 
 import dtx.Tools;
-import sys.io.File;
 import uhx.sys.Tuli;
 import byte.ByteData;
+import uhx.tuli.util.File;
+import uhx.tuli.util.Spawn;
 import uhx.lexer.MarkdownParser;
 
 using Detox;
 using StringTools;
 using haxe.io.Path;
 using sys.FileSystem;
+using uhx.tuli.util.File.Util;
 
 /**
  * ...
@@ -37,18 +39,17 @@ class Markdown {
 		Tuli.onExtension('md', handler, Before);
 	}
 	
-	public function handler(file:TuliFile, content:String):String {
+	public function handler(file:File) {
 		// The output location to save the generated html.
-		var spawned = '${file.path.withoutExtension()}/index.html'.normalize();
-		var output = '${Tuli.config.output}/$spawned';
-		//var skip = FileSystem.exists( output ) && file.stats.mtime.getTime() < FileSystem.stat( output ).mtime.getTime();
-		var skip = FileSystem.exists( output ) && file.modified().getTime() < FileSystem.stat( output ).mtime.getTime();
+		var spawned = (file.path.replace( Tuli.config.input, Tuli.config.output ).withoutExtension() + '/index.html').normalize();
+		var output = spawned;
+		var skip = FileSystem.exists( output ) && file.modified.getTime() < FileSystem.stat( output ).mtime.getTime();
 		
 		if (!skip) {
-			for (key in characters.keys()) content = content.replace(key, characters.get(key));
+			for (key in characters.keys()) file.content = file.content.replace(key, characters.get(key));
 			
 			var parser = new MarkdownParser();
-			var tokens = parser.toTokens( ByteData.ofString( content ), file.path );
+			var tokens = parser.toTokens( ByteData.ofString( file.content ), file.path );
 			var resources = new Map<String, {url:String,title:String}>();
 			parser.filterResources( tokens, resources );
 			
@@ -60,7 +61,7 @@ class Markdown {
 			// Look for a template in the markdown `[_template]: /path/file.html`
 			var template = resources.exists('_template') ? resources.get('_template') : { url:'', title:'' };
 			var location = if (template.url == '') {
-				'/_template.html';
+				'${Tuli.config.input}/_template.html'.normalize();
 			} else {
 				(file.path.directory() + '/${template.url}').normalize();
 			}
@@ -85,12 +86,13 @@ class Markdown {
 			
 			if (!fileCache.exists( location )) {
 				// Grab the templates content.
-				if (Tuli.fileCache.exists( location )) {
-					content = Tuli.fileCache.get(location);
-					fileCache.set(location, content);
+				if (Tuli.files.exists( location )) {
+					content = Tuli.files.get( location ).content;
+					fileCache.set( location, content );
 				} else {
-					content = File.getContent( (Tuli.config.input + '/${location}').normalize() );
-					Tuli.fileCache.set( location, content );
+					var f = new File( location );
+					content = f.content;
+					Tuli.files.push( f );
 					fileCache.set( location, content );
 				}
 			} else {
@@ -99,42 +101,26 @@ class Markdown {
 			
 			var dom = content.parse();
 			
-			for (key in characters.keys()) html = html.replace(characters.get(key), key);
+			for (key in characters.keys()) html = html.replace( characters.get(key), key );
 			dom.find('content[select="markdown"]').replaceWith( null, dtx.Tools.parse( html ) );
 			content = dom.html();
 			
-			// Add the new file location and contents into Tuli's `fileCache` which
-			// it will save for us.
-			Tuli.fileCache.set( spawned, content );
-			
 			if (file.spawned.indexOf( spawned ) == -1) {
 				file.spawned.push( spawned );
-				Tuli.config.spawn.push( {
-					size: 0,
-					extra: {
-						md: {
-							resources: resources,
-						}
-					},
-					spawned: [],
-					ext: 'html',
-					ignore: false,
-					path: spawned,
-					parent: file.path,
-					//created: Tuli.asISO8601(Date.now()),
-					created: file.created,
-					//modified: Tuli.asISO8601(Date.now()),
-					modified: file.modified,
-					name: spawned.withoutDirectory().withoutExtension(),
-					//stats: file.stats,
-				} );
+				
+				var spawn = new Spawn( spawned, file.path );
+				spawn.content = content;
+				spawn.extra.md = {};
+				spawn.extra.md.resources = resources;
+				spawn.created = file.created;
+				spawn.modified = file.modified;
+				
+				Tuli.config.spawn.push( spawn );
 			}
 			
 		}
 		
 		file.ignore = true;
-		
-		return content;
 	}
 	
 }

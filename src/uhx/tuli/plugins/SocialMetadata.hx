@@ -1,13 +1,14 @@
 package uhx.tuli.plugins;
 
-import haxe.imagemagick.Imagick;
-import sys.io.File;
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
+import haxe.imagemagick.Imagick;
 
 using Detox;
 using StringTools;
 using haxe.io.Path;
 using sys.FileSystem;
+using uhx.tuli.util.File.Util;
 
 /**
  * ...
@@ -23,27 +24,15 @@ class SocialMetadata {
 		untyped Tuli = tuli;
 		
 		Tuli.onExtension( 'html', handler, After );
-		Tuli.onFinish( finish, After );
 	}
 	
-	public function handler(file:TuliFile, content:String):String {
-		var dom = content.parse();
+	public function handler(file:File) {
+		var dom = file.content.parse();
 		var head = dom.find('head');
 		var isPartial = head.length == 0;
 		
 		if (!isPartial) {
-			files.push( file.path );
-		}
-		
-		return content;
-	}
-	
-	public function finish() {
-		for (file in files) {
-			
-			var dom = Tuli.fileCache.get( file ).parse();
-			
-			if (file == 'index.html') {
+			if (file.name == 'index.html') {
 				dom.find('meta[property="og:type"]').setAttr('content', 'website');
 			}
 			
@@ -101,12 +90,12 @@ class SocialMetadata {
 			var url = dom.find('meta[property="og:url"]');
 			
 			if (url.length > 0) {
-				var path = 'http://haxe.io/$file'.normalize();
+				var path = 'http://haxe.io/${file.name}'.normalize();
 				if (path.endsWith('index.html')) path = path.directory().addTrailingSlash();
 				url.setAttr('content', path);
 			}
 			
-			Tuli.fileCache.set( file, dom.html() );
+			file.content = dom.html();
 		}
 	}
 	

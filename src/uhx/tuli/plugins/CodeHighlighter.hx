@@ -1,7 +1,8 @@
 package uhx.tuli.plugins;
 
-import byte.ByteData;
 import uhx.sys.Tuli;
+import byte.ByteData;
+import uhx.tuli.util.File;
 
 using Detox;
 
@@ -18,8 +19,8 @@ class CodeHighlighter {
 		Tuli.onExtension('html', handler, After);
 	}
 	
-	public function handler(file:TuliFile, content:String):String {
-		var dom = content.parse();
+	public function handler(file:File) {
+		var dom = file.content.parse();
 		var blocks = dom.find( 'code' );
 		
 		for (code in blocks) {
@@ -41,7 +42,7 @@ class CodeHighlighter {
 			}
 		}
 		
-		return dom.html();
+		file.content = dom.html();
 	}
 	
 }

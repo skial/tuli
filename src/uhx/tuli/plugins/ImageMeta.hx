@@ -1,7 +1,7 @@
 package uhx.tuli.plugins;
 
-import sys.io.File;
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
 import neko.imagemagick.Imagick;
 
 using Detox;
@@ -23,8 +23,8 @@ class ImageMeta {
 		Tuli.onExtension( 'html', handler, After );
 	}
 	
-	public function handler(file:TuliFile, content:String) {
-		var dom = content.parse();
+	public function handler(file:File) {
+		var dom = file.content.parse();
 		var images = dom.find( 'img' );
 		
 		if (images.length > 0) for (image in images) {
@@ -58,8 +58,6 @@ class ImageMeta {
 				// trace( e );
 			}
 		}
-		
-		return dom.html();
 	}
 	
 }

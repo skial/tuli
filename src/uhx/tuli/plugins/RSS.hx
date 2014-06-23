@@ -1,12 +1,13 @@
 package uhx.tuli.plugins;
 
-import sys.io.File;
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
 
 using Detox;
 using StringTools;
 using haxe.io.Path;
 using sys.FileSystem;
+using uhx.tuli.util.File.Util;
 
 /**
  * ...
@@ -14,21 +15,22 @@ using sys.FileSystem;
  */
 class RSS {
 	
-	private static var feed:String;
-	private static var entry:String;
+	private static var feed:File;
+	private static var entry:File;
 	private static var xmlCache:Map<String, DOMCollection> = new Map();
 	
 	public static function main() return RSS;
 	
 	public function new(tuli:Class<Tuli>) {
 		untyped Tuli = tuli;
+		
+		if (feed == null) feed = new File( '${Tuli.config.input}/_feed.rss'.normalize() );
+		if (entry == null) entry = new File( '${Tuli.config.input}/_entry.rss'.normalize() );
+		
 		Tuli.onExtension('md', handler, After);
 	}
 	
-	public function handler(file:TuliFile, content:String):String {
-		if (feed == null) feed = File.getContent('${Tuli.config.input}/_feed.rss'.normalize());
-		if (entry == null) entry = File.getContent('${Tuli.config.input}/_entry.rss'.normalize());
-		
+	public function handler(file:File) {
 		for (f in Tuli.config.files.filter(function(f) {
 			return ['_feed.rss', '_entry.rss'].indexOf(f.path) != -1;
 		} )) f.ignore = true;
@@ -41,15 +43,15 @@ class RSS {
 		
 		var xmlFeed = null;
 		
-		if (Tuli.fileCache.exists( path )) {
-			xmlFeed = Tuli.fileCache.get( path );
+		if (Tuli.files.exists( path )) {
+			xmlFeed = Tuli.files.get( path );
 			
 		} else {
 			xmlFeed = feed;
 			
 		}
 		
-		if (xmlFeed.indexOf(id) == -1 && Tuli.fileCache.exists( '${html}index.html' )) {
+		if (xmlFeed.content.indexOf(id) == -1 && Tuli.files.exists( '${html}index.html' )) {
 			var dom = null;
 			var domFeed = null;
 			var domEntry = null;
@@ -58,7 +60,7 @@ class RSS {
 				dom = xmlCache.get( html + 'index.html' );
 				
 			} else {
-				dom = Tuli.fileCache.get( html + 'index.html' ).parse();
+				dom = Tuli.files.get( html + 'index.html' ).content.parse();
 				
 			}
 			
@@ -66,7 +68,7 @@ class RSS {
 				domFeed = xmlCache.get( path );
 				
 			} else {
-				domFeed = xmlFeed.parse();
+				domFeed = xmlFeed.content.parse();
 				
 			}
 			
@@ -74,19 +76,16 @@ class RSS {
 			
 			if (title != '') {
 				
-				domEntry = entry.parse();
+				domEntry = entry.content.parse();
 				
 				domEntry.find('guid').setText( id );
 				domEntry.find('link').setText( id );
 				domEntry.find('title').setText( title );
 				domEntry.find('description').setText( dom.find('p').first().text() );
-				//domEntry.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
-				domEntry.find('pubDate').setText( DateTools.format( file.created(), '%a, %d %b %Y %H:%M:%S GMT' ) );
+				domEntry.find('pubDate').setText( DateTools.format( file.created, '%a, %d %b %Y %H:%M:%S GMT' ) );
 				
-				//domFeed.find('pubDate').setText( DateTools.format( file.stats.ctime, '%a, %d %b %Y %H:%M:%S GMT' ) );
-				domFeed.find('pubDate').setText( DateTools.format( file.created(), '%a, %d %b %Y %H:%M:%S GMT' ) );
-				//domFeed.find('lastBuildDate').setText( DateTools.format( file.stats.mtime, '%a, %d %b %Y %H:%M:%S GMT' ) );
-				domFeed.find('lastBuildDate').setText( DateTools.format( file.modified(), '%a, %d %b %Y %H:%M:%S GMT' ) );
+				domFeed.find('pubDate').setText( DateTools.format( file.created, '%a, %d %b %Y %H:%M:%S GMT' ) );
+				domFeed.find('lastBuildDate').setText( DateTools.format( file.modified, '%a, %d %b %Y %H:%M:%S GMT' ) );
 				domFeed.find('ttl').next().setAttr('href', 'http://haxe.io/$path');
 				
 				domFeed.find('channel').append( null, domEntry );
@@ -109,10 +108,10 @@ class RSS {
 				}
 				
 				for (key in Markdown.characters.keys()) {
-					result = result.replace(Markdown.characters.get( key ), key );
+					result = result.replace( Markdown.characters.get( key ), key );
 				}
 				
-				Tuli.fileCache.set( path, result );
+				xmlFeed.content = result;
 				
 			}
 			
@@ -126,8 +125,6 @@ class RSS {
 		id = null;
 		path = null;
 		xmlFeed = null;
-		
-		return content;
 	}
 	
 }

@@ -1,6 +1,7 @@
 package uhx.tuli.plugins;
 
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
 
 using Detox;
 
@@ -17,8 +18,8 @@ class ImageGroup {
 		Tuli.onExtension('html', handler, After);
 	}
 	
-	public function handler(file:TuliFile, content:String):String {
-		var dom = content.parse();
+	public function handler(file:File) {
+		var dom = file.content.parse();
 		
 		for (p in dom.find( 'p' )) {
 			var images = [for (img in p.find( 'img' )) img];
@@ -36,7 +37,7 @@ class ImageGroup {
 			}
 		}
 		
-		return dom.html();
+		file.content = dom.html();
 	}
 	
 }

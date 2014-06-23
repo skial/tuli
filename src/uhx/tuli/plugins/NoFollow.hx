@@ -1,7 +1,7 @@
 package uhx.tuli.plugins;
 
-import sys.io.File;
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
 
 using Detox;
 using StringTools;
@@ -22,8 +22,8 @@ class NoFollow {
 		Tuli.onExtension( 'html', handler, After );
 	}
 	
-	public function handler(file:TuliFile, content:String) {
-		var dom = content.parse();
+	public function handler(file:File) {
+		var dom = file.content.parse();
 		var skip:Array<String> = Tuli.config.extra.plugins.nofollow.skip;
 		var links = dom.find('a');
 		
@@ -43,7 +43,7 @@ class NoFollow {
 			}
 		}
 		
-		return dom.html();
+		file.content = dom.html();
 	}
 	
 }
