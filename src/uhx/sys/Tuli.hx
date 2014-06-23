@@ -253,9 +253,7 @@ class Tuli {
 	
 	public static function finish() {
 		// Build `config.data` from the data plugins.
-		for (cb in dataPluginsAfter) {
-			config.extra = cb(config.extra);
-		}
+		for (cb in dataPluginsAfter) config.extra = cb(config.extra);
 		
 		// Send files to content plugins for modification if not in `fileCache`.
 		for (extension in extPluginsAfter.keys()) {
@@ -307,48 +305,6 @@ class Tuli {
 		
 	}
 	
-	private static function loadHTML(path:String):String {
-		var process = new Process('tidy', [
-			// Indent elements.
-			'-i', 
-			// Be quiet.
-			'-q', 
-			// Convert to xml.
-			'-asxml', 
-			// Force the doctype to valid html5
-			'--doctype', 'html5',
-			// Don't add the tidy html5 meta
-			'--tidy-mark', 'n',
-			// Keep empty elements and paragraphs.
-			'--drop-empty-elements', 'n',
-			'--drop-empty-paras', 'n', 
-			'--drop-proprietary-attributes', 'n',
-			'--escape-cdata', 'y',
-			'--indent-cdata', 'n',
-			'--wrap', '0',
-			//'--new-pre-tags', '',
-			// Add missing block elements.
-			'--new-blocklevel-tags', 
-			'article aside audio canvas datalist figcaption figure footer ' +
-			'header hgroup output section video details element main menu ' +
-			'template shadow nav ruby source',
-			// Add missing inline elements.
-			'--new-inline-tags', 'bdi data mark menuitem meter progress rp' +
-			'rt summary time',
-			// Add missing void elements.
-			'--new-empty-tags', 'content keygen track wbr',
-			// Don't wrap partials in `<html>`, or `<body>` and don't add `<head>`.
-			'--show-body-only', 'auto', 
-			// Make the converted html easier to read.
-			'--vertical-space', 'y', path]);
-			
-		var content = process.stdout.readAll().toString();
-		
-		process.close();
-		
-		return content;
-	}
-	
 	// Recursively create the directory in `config.output`.
 	private static function createDirectory(path:String) {
 		if (!path.directory().addTrailingSlash().exists()) {
@@ -372,57 +328,12 @@ class Tuli {
 	private static function save(file:File) {
 		var input = file.path.normalize();
 		var output = file.path.replace(config.input, config.output).normalize().replace(' ', '-');
-		var newer = isNewer(file);
 		
 		if (!file.ignore) {
 			createDirectory( output );
 			file.save( output );
 			
 		}
-	}
-	
-	private static function saveHTML(path:String, content:String) {
-		/*var process = new Process('tidy', [
-			// Encode as utf8.
-			'-utf8',
-			// Be quite.
-			//'-q',
-			// Output as html, as the input is xml.
-			'-ashtml',
-			// Set the output location.
-			'-o', '"$path"',
-			// Force the doctype to html5.
-			'--doctype', 'html5',
-			// Don't add the tidy html5 meta
-			'--tidy-mark', 'n',
-			//'-f', 'errors_$key.txt',
-			// Keep empty elements and paragraphs.
-			'--drop-empty-elements', 'n',
-			'--drop-empty-paras', 'n', 
-			'--drop-proprietary-attributes', 'n',
-			'--escape-cdata', 'y',
-			'--indent-cdata', 'n',
-			'--wrap', '0',
-			// Add missing block elements.
-			'--new-blocklevel-tags', 
-			'article aside audio canvas datalist figcaption figure footer ' +
-			'header hgroup output section video details element main menu ' +
-			'template shadow nav ruby source',
-			// Add missing inline elements.
-			'--new-inline-tags', 'bdi data mark menuitem meter progress rp' +
-			'rt summary time',
-			// Add missing void elements.
-			'--new-empty-tags', 'content keygen track wbr',
-			// Don't wrap partials in `<html>`, or `<body>` and don't add `<head>`.
-			'--show-body-only', 'auto', 
-			// Make the converted html easier to read.
-			'--vertical-space', 'y',
-		]);
-		
-		process.stdin.writeString( content );
-		process.exitCode();
-		process.close();*/
-		//File.saveContent( path, content );
 	}
 	
 	// This just spits out the correct format. Its not utc aware.
@@ -436,114 +347,9 @@ class Tuli {
 		return '$YYYY-${MM<10?"0"+MM:""+MM}-${DD<10?"0"+DD:""+DD}T${hh<10?"0"+hh:""+hh}:${mm<10?"0"+mm:""+mm}:${ss<10?"0"+ss:""+ss}Z';
 	}
 	
-	private static function tempFile(path:String):File {
-		/*return {
-			size: 0,
-			extra: {},
-			path: path,
-			spawned: [],
-			ignore: false,
-			ext: path.extension(),
-			//created: asISO8601(Date.now()),
-			created: Date.now,
-			//modified: asISO8601(Date.now()),
-			modified: Date.now,
-			name: path.withoutDirectory().withoutExtension(),
-		}*/
+	private static inline function tempFile(path:String):File {
 		return new File( (Tuli.config.input + '/$path').normalize() );
 	}
-	
-	public static function isNewer(file:File, ?than:File = null):Bool {
-		if (than == null) than = file;
-		
-		var result = false;
-		var input = '${config.input}/${file.path}'.normalize();
-		var output = '${config.output}/${than.path}'.normalize();
-		
-		if (!input.exists()) {
-			result = false;
-			
-		}
-		
-		if (!output.exists()) {
-			result = true;
-			
-		} else {
-			//if (file.stats != null && than.stats != null) {
-				//result = file.modified().getTime() > than.modified().getTime();
-				result = file.modified.getTime() > than.modified.getTime();
-				
-			/*} else if(input.exists()) {
-				result = input.stat().mtime.getTime() > output.stat().mtime.getTime();
-				
-			}*/
-			
-		}
-		
-		return result;
-	}
-	
-	/*public static function getCreationDate(file:TuliFile):Date {
-		var path = '${config.input}/${file.path}';
-		
-		if (file == null) {
-			file.created = function() return Date.now();
-			return file.created();
-		}
-		//if (file.created == null) {
-			if (config.extra.git) {
-				var process = new Process('git', ['log', '--pretty=format:%at', '--diff-filter=A', '--', path]);
-				var output = process.stdout.readAll().toString();
-				process.exitCode();
-				process.close();
-				
-				if (output.trim() != '') {
-					file.created = function() return Date.fromTime( DateTools.seconds( Std.parseFloat( output ) ) );
-					
-				} else {
-					file.created = function() return path.stat().ctime;
-					
-				}
-				
-			} else {
-				file.created = function() return path.stat().ctime;
-				
-			}
-		//}
-		
-		return file.created();
-	}
-	
-	public static function getModifiedDate(file:TuliFile):Date {
-		var path = '${config.input}/${file.path}';
-		
-		if (file == null) {
-			file.modified = function() return Date.now();
-			return file.modified();
-		}
-		//if (file.modified == null) {
-			if (config.extra.git) {
-				var process = new Process('git', ['log', '-1', '--pretty=format:%ct', '--diff-filter=M', '--', path]);
-				var output = process.stdout.readAll().toString();
-				process.exitCode();
-				process.close();
-				
-				if (output.trim() != '') {
-					file.modified = function() return Date.fromTime( DateTools.seconds( Std.parseFloat( output ) ) );
-					
-				} else {
-					file.modified = function() return path.stat().mtime;
-					
-				}
-				
-			} else {
-				file.modified = function() return path.stat().mtime;
-				
-			}
-		//}
-		
-		return file.modified();
-	}*/
 	
 }
 
