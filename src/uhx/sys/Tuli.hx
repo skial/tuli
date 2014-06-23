@@ -347,6 +347,25 @@ class Tuli {
 		return new File( (Tuli.config.input + '/$path').normalize() );
 	}
 	
+	public static function isNewer(a:File, b:File):Bool {
+		
+		switch ([a.path.exists(), b.path.exists()]) {
+			case [true, false]: return true;
+			case [false, _]: return false;
+			case [true, true]:
+				if (a.modified.getTime() > b.modified.getTime()) {
+					return true;
+				}
+				
+				if (a.created.getTime() > b.created.getTime()) {
+					return true;
+				}
+				
+				return false;
+		}
+		
+	}
+	
 }
 
 private typedef Commit = {
