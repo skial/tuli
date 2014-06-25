@@ -9,7 +9,12 @@
 -debug
 #-dce no
 -cp src
-
--neko tablecontents.n
 -main uhx.tuli.plugins.TableContents
 
+--each
+
+-neko tablecontents.n
+
+--next
+
+-cs bin/cs/tablecontents

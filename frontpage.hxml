@@ -10,6 +10,12 @@
 #-dce no
 -cp src
 
--neko frontpage.n
 -main uhx.tuli.plugins.FrontPage
 
+--each
+
+-neko frontpage.n
+
+--next
+
+-cs bin/cs/frontpage

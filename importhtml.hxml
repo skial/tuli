@@ -10,6 +10,12 @@
 #-dce no
 -cp src
 
--neko importhtml.n
 -main uhx.tuli.plugins.ImportHTML
 
+--each
+
+-neko importhtml.n
+
+--next
+
+-cs bin/cs/importhtml

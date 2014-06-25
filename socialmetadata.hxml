@@ -10,6 +10,12 @@
 #-dce no
 -cp src
 
--neko socialmetadata.n
 -main uhx.tuli.plugins.SocialMetadata
 
+--each
+
+-neko socialmetadata.n
+
+--next
+
+-cs bin/cs/socialmetadata

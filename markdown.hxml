@@ -10,6 +10,12 @@
 #-dce no
 -cp src
 
--neko markdown.n
 -main uhx.tuli.plugins.Markdown
 
+--each
+
+-neko markdown.n
+
+--next
+
+-cs bin/cs/markdown/

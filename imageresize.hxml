@@ -10,5 +10,12 @@
 #-dce no
 -cp src
 
--neko imageresize.n
 -main uhx.tuli.plugins.ImageResize
+
+--each
+
+-neko imageresize.n
+
+--next
+
+-cs bin/cs/imageresize

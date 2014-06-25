@@ -10,6 +10,12 @@
 #-dce no
 -cp src
 
--neko imagegroup.n
 -main uhx.tuli.plugins.ImageGroup
 
+--each
+
+-neko imagegroup.n
+
+--next
+
+-cs bin/cs/imagegroup

@@ -10,5 +10,12 @@
 #-dce no
 -cp src
 
--neko codehighlighter.n
 -main uhx.tuli.plugins.CodeHighlighter
+
+--each
+
+-neko codehighlighter.n
+
+--next
+
+-cs bin/cs/codehighlighter

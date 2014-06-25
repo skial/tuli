@@ -33,13 +33,17 @@ class Markdown {
 	'“'=>'&ldquo;', '”'=>'&rdquo;' ];
 
 	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+		#if neko
+		//untyped uhx.sys.Tuli = tuli;
+		#end
+		
 		if (fileCache == null) fileCache = new Map();
 		
 		Tuli.onExtension('md', handler, Before);
 	}
 	
 	public function handler(file:File) {
+		trace(file.path);
 		// The output location to save the generated html.
 		var spawned = (file.path.replace( Tuli.config.input, Tuli.config.output ).withoutExtension() + '/index.html').normalize();
 		var output = spawned;

@@ -10,6 +10,12 @@
 #-dce no
 -cp src
 
--neko atom.n
 -main uhx.tuli.plugins.Atom
 
+--each
+
+-neko atom.n
+
+--next
+
+-cs bin/cs/atom

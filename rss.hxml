@@ -10,6 +10,12 @@
 #-dce no
 -cp src
 
--neko rss.n
 -main uhx.tuli.plugins.RSS
 
+--each
+
+-neko rss.n
+
+--next
+
+-cs bin/cs/rss

@@ -9,7 +9,12 @@
 -debug
 #-dce no
 -cp src
-
--neko titlelinks.n
 -main uhx.tuli.plugins.TitleLinks
 
+--each
+
+-neko titlelinks.n
+
+--next
+
+-cs bin/cs/titlelinks

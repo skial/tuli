@@ -10,6 +10,12 @@
 #-dce no
 -cp src
 
--neko boxedimages.n
 -main uhx.tuli.plugins.ImageLetterbox
 
+--each
+
+-neko boxedimages.n
+
+--next
+
+-cs bin/cs/boxedimages
