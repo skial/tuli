@@ -23,8 +23,8 @@ class Atom {
 	public function new(tuli:Class<Tuli>) {
 		untyped Tuli = tuli;
 		
-		if (feed == null) feed = new File( '${Tuli.config.input}/_feed.atom'.normalize() );
-		if (entry == null) entry = new File( '${Tuli.config.input}/_entry.atom'.normalize() );
+		if (feed == null) feed = new File( '${Tuli.config.input}/templates/_feed.atom'.normalize() );
+		if (entry == null) entry = new File( '${Tuli.config.input}/templates/_entry.atom'.normalize() );
 		
 		Tuli.onExtension('md', handler, After);
 	}

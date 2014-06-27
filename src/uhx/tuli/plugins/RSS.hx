@@ -9,6 +9,10 @@ using haxe.io.Path;
 using sys.FileSystem;
 using uhx.tuli.util.File.Util;
 
+private typedef RSSConfig = {
+	var feed_template:String;
+	var entry_template:String;
+}
 /**
  * ...
  * @author Skial Bainn
@@ -18,14 +22,26 @@ class RSS {
 	private static var feed:File;
 	private static var entry:File;
 	private static var xmlCache:Map<String, DOMCollection> = new Map();
+	private static var options:RSSConfig;
 	
 	public static function main() return RSS;
 	
 	public function new(tuli:Class<Tuli>) {
 		untyped Tuli = tuli;
 		
-		if (feed == null) feed = new File( '${Tuli.config.input}/_feed.rss'.normalize() );
-		if (entry == null) entry = new File( '${Tuli.config.input}/_entry.rss'.normalize() );
+		options = Tuli.config.extra.plugins;
+		
+		if (options.feed_template != null) {
+			feed = new File( '${Tuli.config.input}/${options.feed_template}'.normalize() );
+		} else {
+			feed = new File( '${Tuli.config.input}/templates/_feed.rss'.normalize() );
+		}
+		
+		if (options.entry_template != null) {
+			feed = new File( '${Tuli.config.input}/${options.entry_template}'.normalize() );
+		} else {
+			entry = new File( '${Tuli.config.input}/templates/_entry.rss'.normalize() );
+		}
 		
 		Tuli.onExtension('md', handler, After);
 	}
