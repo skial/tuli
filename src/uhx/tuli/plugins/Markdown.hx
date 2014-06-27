@@ -61,7 +61,7 @@ class Markdown {
 			// Look for a template in the markdown `[_template]: /path/file.html`
 			var template = resources.exists('_template') ? resources.get('_template') : { url:'', title:'' };
 			var location = if (template.url == '') {
-				'${Tuli.config.input}/_template.html'.normalize();
+				'${Tuli.config.input}/templates/_template.html'.normalize();
 			} else {
 				(file.path.directory() + '/${template.url}').normalize();
 			}
