@@ -162,18 +162,19 @@ class Tuli {
 				}
 				
 				if (config.plugins.length > 0) {
-					Tappi.haxelib = true;
+					var libs = [];
 					
 					for (plugin in config.plugins) for (name in plugin.fields()) {
 						// field equals the haxelib name
-						Tappi.libraries.push( name );
-						Tappi.libraries = Tappi.libraries.concat( (plugin.field( name ):Array<String>) );
+						libs.push( name );
+						libs = libs.concat( (plugin.field( name ):Array<String>) );
 					}
 					
-					Tappi.load();
+					var tappi = new Tappi(libs, true);
+					tappi.load();
 					
-					for (id in Tappi.libraries) if (Tappi.classes.exists( id )) {
-						var cls:Class<TuliPlugin> = cast Tappi.classes.get( id );
+					for (id in tappi.libraries) if (tappi.classes.exists( id )) {
+						var cls:Class<TuliPlugin> = cast tappi.classes.get( id );
 						instances.set( id, Type.createInstance( cls, [Tuli] ));
 					}
 					
