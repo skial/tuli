@@ -3,6 +3,7 @@ package uhx.sys;
 import Detox;
 import dtx.Tools;
 import haxe.Json;
+import haxe.Timer;
 import uhx.Tappi;
 import tjson.TJSON;
 import haxe.io.Eof;
@@ -129,8 +130,10 @@ class Tuli {
 	private static var instances:Map<String, TuliPlugin> = new Map();
 	
 	private static var isSetup:Bool;
+	public static var time:Float = .0;
 	
 	public static function initialize():Void {
+		time = Timer.stamp();
 		
 		if (isSetup == null || isSetup == false) {
 			
@@ -171,6 +174,8 @@ class Tuli {
 					}
 					
 					var tappi = new Tappi(libs, true);
+					
+					tappi.find();
 					tappi.load();
 					
 					for (id in tappi.libraries) if (tappi.classes.exists( id )) {
@@ -246,6 +251,7 @@ class Tuli {
 		
 		// Recreate everything in `config.output` directory.
 		finish();
+		trace( Timer.stamp() - time );
 	}
 	
 	public static function finish() {
