@@ -192,7 +192,6 @@ class Tuli {
 	}
 	
 	public static function input(path:String) {
-		trace( 'running input');
 		path = '$path/'.normalize();
 		
 		// Find all files in `path`.
