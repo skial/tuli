@@ -80,3 +80,8 @@
 
 -neko frontpage.n
 -main uhx.tuli.plugins.FrontPage
+
+--next
+
+-neko responsiveembed.n
+-main uhx.tuli.plugins.ResponsiveEmbed
