@@ -13,6 +13,11 @@
 
 --each
 
+-neko run.n
+-main LibRunner
+
+--next
+
 -neko atom.n
 -main uhx.tuli.plugins.Atom
 
