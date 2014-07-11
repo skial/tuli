@@ -1,14 +1,92 @@
--cmd haxe atom.hxml
--cmd haxe boxedimages.hxml
--cmd importhtml.hxml
--cmd markdown.hxml
--cmd nofollow.hxml
--cmd rss.hxml
--cmd socialmetadata.hxml
--cmd titlelinks.hxml
--cmd imagemeta.hxml
--cmd imageresize.hxml
--cmd codehighlighter.hxml
--cmd imagegroup.hxml
--cmd tablecontents.hxml
--cmd frontpage.hxml
+-lib tuli
+-lib uhu
+-lib mo
+-lib detox
+-lib beanhx
+-lib tjson
+-lib selecthxml
+-lib imagemagick
+-lib tappi
+-debug
+#-dce no
+-cp src
+
+--each
+
+-neko run.n
+-main LibRunner
+
+--next
+
+-neko atom.n
+-main uhx.tuli.plugins.Atom
+
+--next
+
+-neko boxedimages.n
+-main uhx.tuli.plugins.ImageLetterbox
+
+--next
+
+-neko importhtml.n
+-main uhx.tuli.plugins.ImportHTML
+
+--next
+
+-neko markdown.n
+-main uhx.tuli.plugins.Markdown
+
+--next
+
+-neko nofollow.n
+-main uhx.tuli.plugins.NoFollow
+
+--next
+
+-neko rss.n
+-main uhx.tuli.plugins.RSS
+
+--next
+
+-neko socialmetadata.n
+-main uhx.tuli.plugins.SocialMetadata
+
+--next
+
+-neko titlelinks.n
+-main uhx.tuli.plugins.TitleLinks
+
+--next
+
+-neko imagemeta.n
+-main uhx.tuli.plugins.ImageMeta
+
+--next
+
+-neko imageresize.n
+-main uhx.tuli.plugins.ImageResize
+
+--next
+
+-neko codehighlighter.n
+-main uhx.tuli.plugins.CodeHighlighter
+
+--next
+
+-neko imagegroup.n
+-main uhx.tuli.plugins.ImageGroup
+
+--next
+
+-neko tablecontents.n
+-main uhx.tuli.plugins.TableContents
+
+--next
+
+-neko frontpage.n
+-main uhx.tuli.plugins.FrontPage
+
+--next
+
+-neko responsiveembed.n
+-main uhx.tuli.plugins.ResponsiveEmbed

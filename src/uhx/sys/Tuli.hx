@@ -3,6 +3,7 @@ package uhx.sys;
 import Detox;
 import dtx.Tools;
 import haxe.Json;
+import haxe.Timer;
 import uhx.Tappi;
 import tjson.TJSON;
 import haxe.io.Eof;
@@ -10,14 +11,11 @@ import sys.FileStat;
 import hxparse.Lexer;
 import byte.ByteData;
 import sys.io.Process;
+import neko.vm.Loader;
 import uhx.tuli.util.File;
 import uhx.tuli.util.Spawn;
 import uhx.lexer.MarkdownParser;
 import uhx.tuli.util.AlphabeticalSort;
-
-#if neko
-import neko.vm.Loader;
-#end
 
 using Lambda;
 using Detox;
@@ -131,11 +129,13 @@ class Tuli {
 	private static var classes:Map<String, Class<TuliPlugin>> = new Map();
 	private static var instances:Map<String, TuliPlugin> = new Map();
 	
-	private static var isSetup:Bool = false;
+	private static var isSetup:Bool;
+	public static var time:Float = .0;
 	
 	public static function initialize():Void {
+		time = Timer.stamp();
 		
-		if (isSetup == false) {
+		if (isSetup == null || isSetup == false) {
 			
 			if ( config != null ) {
 				
@@ -165,18 +165,21 @@ class Tuli {
 				}
 				
 				if (config.plugins.length > 0) {
-					Tappi.haxelib = true;
+					var libs = [];
 					
 					for (plugin in config.plugins) for (name in plugin.fields()) {
 						// field equals the haxelib name
-						Tappi.libraries.push( name );
-						Tappi.libraries = Tappi.libraries.concat( (plugin.field( name ):Array<String>) );
+						libs.push( name );
+						libs = libs.concat( (plugin.field( name ):Array<String>) );
 					}
 					
-					Tappi.load( ['uhx.sys.Tuli' => function() return Tuli] );
+					var tappi = new Tappi(libs, true);
 					
-					for (id in Tappi.libraries) if (Tappi.classes.exists( id )) {
-						var cls:Class<TuliPlugin> = cast Tappi.classes.get( id );
+					tappi.find();
+					tappi.load();
+					
+					for (id in tappi.libraries) if (tappi.classes.exists( id )) {
+						var cls:Class<TuliPlugin> = cast tappi.classes.get( id );
 						instances.set( id, Type.createInstance( cls, [Tuli] ));
 					}
 					
@@ -189,7 +192,6 @@ class Tuli {
 	}
 	
 	public static function input(path:String) {
-		trace( 'running input');
 		path = '$path/'.normalize();
 		
 		// Find all files in `path`.
@@ -248,6 +250,7 @@ class Tuli {
 		
 		// Recreate everything in `config.output` directory.
 		finish();
+		trace( Timer.stamp() - time );
 	}
 	
 	public static function finish() {

@@ -47,7 +47,8 @@ class ImportHTML {
 					if (selector.startsWith('#')) {
 						selector = selector.substring(1);
 						var key = '${selector}.html';
-						var partialFile = Tuli.files.filter( function(f) return f.name == selector )[0];
+						var partialFile = Tuli.files.filter( function(f) return f.name == selector && f.ext == 'html' )[0];
+						
 						if (partialFile != null) {
 							var partial = partialFile.content.parse();
 							

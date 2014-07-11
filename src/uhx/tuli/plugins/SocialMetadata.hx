@@ -73,7 +73,7 @@ class SocialMetadata {
 					if (meta.attr('content') == '') images.push( meta );
 				}
 			}
-			
+			//trace( file.path );
 			if (alt.length > 0) {
 				img = alt.first().attr('src');
 				var data = new Imagick('${Tuli.config.input}/$img'.normalize());

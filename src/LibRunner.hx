@@ -128,7 +128,7 @@ class LibRunner implements Klas {
 				Sys.println( 'Tuli is already global.' );
 				return;
 				
-			case _ if ('$path/tuli.bat'.normalize().exists()): 
+			case _ if ('$path/tuli.sh'.normalize().exists()): 
 				Sys.println( 'Tuli is already global.' );
 				return;
 				
