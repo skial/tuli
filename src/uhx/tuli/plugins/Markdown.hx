@@ -74,8 +74,11 @@ class Markdown {
 				
 				if (token != null) {
 					template.title = switch (token.token) {
-						case Keyword(Header(_, _, t)): t;
-						case _: '';
+						case Keyword(Header(_, _, t)): 
+							parser.printString( token );
+							
+						case _: 
+							'';
 					}
 				}
 			}
@@ -104,7 +107,10 @@ class Markdown {
 			for (key in characters.keys()) html = html.replace( characters.get(key), key );
 			dom.find('content[select="markdown"]').replaceWith( null, dtx.Tools.parse( html ) );
 			content = dom.html();
-			
+			/*if (file.path.toLowerCase().indexOf( 'one year of haxe' ) > -1) {
+				trace( dtx.Tools.parse( html ) );
+				trace( content );
+			}*/
 			if (file.spawned.indexOf( spawned ) == -1) {
 				file.spawned.push( spawned );
 				
