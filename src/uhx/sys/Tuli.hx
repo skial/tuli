@@ -11,7 +11,6 @@ import sys.FileStat;
 import hxparse.Lexer;
 import byte.ByteData;
 import sys.io.Process;
-import neko.vm.Loader;
 import uhx.tuli.util.File;
 import uhx.tuli.util.Spawn;
 import uhx.lexer.MarkdownParser;
@@ -129,13 +128,13 @@ class Tuli {
 	private static var classes:Map<String, Class<TuliPlugin>> = new Map();
 	private static var instances:Map<String, TuliPlugin> = new Map();
 	
-	private static var isSetup:Bool;
+	private static var isSetup:Bool = false;
 	public static var time:Float = .0;
 	
 	public static function initialize():Void {
 		time = Timer.stamp();
 		
-		if (isSetup == null || isSetup == false) {
+		if (isSetup == false) {
 			
 			if ( config != null ) {
 				
