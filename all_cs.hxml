@@ -1,0 +1,92 @@
+-lib tuli
+-lib uhu
+-lib mo
+-lib detox
+-lib beanhx
+-lib tjson
+-lib selecthxml
+-lib imagemagick
+-lib tappi
+-debug
+#-dce no
+-cp src
+
+--each
+
+-cs bin/cs/librunner/
+-main LibRunner
+
+--next
+
+-cs bin/cs/atom/
+-main uhx.tuli.plugins.Atom
+
+--next
+
+-cs bin/cs/boxedimages/
+-main uhx.tuli.plugins.ImageLetterbox
+
+--next
+
+-cs bin/cs/importhtml/
+-main uhx.tuli.plugins.ImportHTML
+
+--next
+
+-cs bin/cs/markdown/
+-main uhx.tuli.plugins.Markdown
+
+--next
+
+-cs bin/cs/nofollow/
+-main uhx.tuli.plugins.NoFollow
+
+--next
+
+-cs bin/cs/rss/
+-main uhx.tuli.plugins.RSS
+
+--next
+
+-cs bin/cs/socialmetadata/
+-main uhx.tuli.plugins.SocialMetadata
+
+--next
+
+-cs bin/cs/titlelinks/
+-main uhx.tuli.plugins.TitleLinks
+
+--next
+
+-cs bin/cs/imagemeta/
+-main uhx.tuli.plugins.ImageMeta
+
+#--next
+
+#-cs bin/cs/imageresize/
+#-main uhx.tuli.plugins.ImageResize
+
+--next
+
+-cs bin/cs/codehighlighter/
+-main uhx.tuli.plugins.CodeHighlighter
+
+#--next
+
+#-cs bin/cs/imagegroup/
+#-main uhx.tuli.plugins.ImageGroup
+
+--next
+
+-cs bin/cs/tablecontents/
+-main uhx.tuli.plugins.TableContents
+
+--next
+
+-cs bin/cs/frontpage/
+-main uhx.tuli.plugins.FrontPage
+
+--next
+
+-cs bin/cs/responsiveembed/
+-main uhx.tuli.plugins.ResponsiveEmbed
