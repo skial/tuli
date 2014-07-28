@@ -21,7 +21,6 @@ class RSS {
 	
 	private static var feed:File;
 	private static var entry:File;
-	private static var xmlCache:Map<String, DOMCollection> = new Map();
 	private static var options:RSSConfig;
 	
 	public static function main() return RSS;
@@ -54,39 +53,24 @@ class RSS {
 		var dir = file.path.directory();
 		if (dir == '') dir = 'articles';
 		var path = '$dir/rss.xml'.normalize();
-		var html = '${file.path.withoutExtension()}/'.normalize();
+		var html = path.replace( Tuli.config.input, 'http://haxe.io/' ).normalize();
 		var id = 'http://haxe.io/$html';
 		
 		var xmlFeed = null;
 		
-		if (Tuli.files.exists( path )) {
-			xmlFeed = Tuli.files.get( path );
+		if (Tuli.config.files.exists( path )) {
+			xmlFeed = Tuli.config.files.get( path );
 			
 		} else {
 			xmlFeed = feed;
+			Tuli.config.files.push( xmlFeed );
 			
 		}
 		
-		if (xmlFeed.content.indexOf(id) == -1 && Tuli.files.exists( '${html}index.html' )) {
-			var dom = null;
-			var domFeed = null;
+		if (xmlFeed.content.indexOf(id) == -1) {
+			var dom = Tuli.config.files.get( '${file.path.withoutExtension()}/index.html'.normalize() ).content.parse();;
+			var domFeed = xmlFeed.content.parse();
 			var domEntry = null;
-			
-			if (xmlCache.exists( html + 'index.html' )) {
-				dom = xmlCache.get( html + 'index.html' );
-				
-			} else {
-				dom = Tuli.files.get( html + 'index.html' ).content.parse();
-				
-			}
-			
-			if (xmlCache.exists( path )) {
-				domFeed = xmlCache.get( path );
-				
-			} else {
-				domFeed = xmlFeed.content.parse();
-				
-			}
 			
 			var title = dom.find('h1').first().text();
 			

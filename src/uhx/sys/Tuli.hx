@@ -73,7 +73,7 @@ class Tuli {
 	public static var secrets:Dynamic;
 	
 	// Every single file.
-	public static var files:Array<File> = [];
+	//public static var files:Array<File> = [];
 	//public static var fileCache:Map<String, String> = new Map();
 	
 	private static var extPluginsBefore:Map<String, Array<File->Void>> = new Map();
@@ -218,7 +218,7 @@ class Tuli {
 			config.files.remove( missing );
 		}
 		
-		files = config.files = config.files.concat( 
+		config.files = config.files.concat( 
 			[for (newItem in newItems) if (!'$path/$newItem'.isDirectory()) {
 				new File( '$path/$newItem'.normalize() );
 			}]
@@ -273,7 +273,7 @@ class Tuli {
 		
 		// Ignore extensions which have been added by plugins.
 		if (config.ignore != null && config.ignore.length > 0) {
-			files = files.filter( function(f) return config.ignore.indexOf( f.ext ) == -1 );
+			config.files = config.files.filter( function(f) return config.ignore.indexOf( f.ext ) == -1 );
 		}
 		
 		// Last chance to modify anything.

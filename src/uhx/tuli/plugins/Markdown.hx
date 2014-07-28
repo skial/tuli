@@ -93,13 +93,13 @@ class Markdown {
 			
 			if (!fileCache.exists( location )) {
 				// Grab the templates content.
-				if (Tuli.files.exists( location )) {
-					content = Tuli.files.get( location ).content;
+				if (Tuli.config.files.exists( location )) {
+					content = Tuli.config.files.get( location ).content;
 					fileCache.set( location, content );
 				} else {
 					var f = new File( location );
 					content = f.content;
-					Tuli.files.push( f );
+					Tuli.config.files.push( f );
 					fileCache.set( location, content );
 				}
 			} else {

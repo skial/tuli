@@ -25,11 +25,14 @@ class CodeHighlighter {
 		
 		for (code in blocks) {
 			
-			var hasLang = code.hasClass( 'language' );
+			var hasLang = false;
 			var lang = null;
 			
-			if (hasLang) {
-				lang = [for (k in Lang.uage.keys()) if (code.hasClass( k ) ) k][0];
+			for (attribute in code.attributes) {
+				if (attribute.name == 'language') {
+					lang = attribute.value;
+					hasLang = Lang.uage.exists( lang );
+				}
 			}
 			
 			if (hasLang && lang != null) {
@@ -39,6 +42,11 @@ class CodeHighlighter {
 				
 				code.setText('');
 				code.append(null, html.parse());
+				
+				var link = dom.find('link[href*="/css/haxe.flat16.css"]');
+				if (link.length == 0) {
+					dom.find('head').append(null, '<link rel="stylesheet" type="text/css" href="/css/$lang.flat16.css" />'.parse());
+				}
 			}
 		}
 		
