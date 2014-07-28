@@ -43,15 +43,15 @@ class Atom {
 		var xmlFeed = null;
 		
 		//if (Tuli.fileCache.exists( path )) {
-		if (Tuli.files.exists( path )) {
-			xmlFeed = Tuli.files.get( path );
+		if (Tuli.config.files.exists( path )) {
+			xmlFeed = Tuli.config.files.get( path );
 			
 		} else {
 			xmlFeed = feed;
 			
 		}
 		
-		if (xmlFeed.content.indexOf(id) == -1 && Tuli.files.exists( '${html}index.html' )) {
+		if (xmlFeed.content.indexOf(id) == -1 && Tuli.config.files.exists( '${html}index.html' )) {
 			var dom = null;
 			var domFeed = null;
 			var domEntry = null;
@@ -60,7 +60,7 @@ class Atom {
 				dom = xmlCache.get( html + 'index.html' );
 				
 			} else {
-				dom = Tuli.files.get( html + 'index.html' ).content.parse();
+				dom = Tuli.config.files.get( html + 'index.html' ).content.parse();
 				
 			}
 			
