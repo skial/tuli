@@ -19,11 +19,12 @@ using sys.FileSystem;
 class ImageResize {
 
 	public static function main() return ImageResize;
+	private static var tuli:Tuli;
 
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		Tuli.onExtension( 'css', handler, Before );
+		tuli.onExtension( 'css', handler, Before );
 	}
 	
 	public function handler(file:File) {

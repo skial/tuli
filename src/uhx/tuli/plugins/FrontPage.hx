@@ -16,22 +16,23 @@ using uhx.tuli.util.File.Util;
 class FrontPage {
 
 	public static function main() return FrontPage;
+	private static var tuli:Tuli;
 	
 	public var articles:Array<String> = [];
 	public var fragments:Map<String,Date> = new Map();
 	
-	public function new(tuli:Tuli) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		Tuli.onExtension( 'md', handler, After );
-		Tuli.onFinish( finish, After );
+		tuli.onExtension( 'md', handler, After );
+		tuli.onFinish( finish, After );
 	}
 	
 	public function handler(file:File) {
 		if (articles.indexOf( file.path ) == -1 && file.spawned.length > 0) {
 			articles.push( file.path );
 			var spawned = file.spawned.filter( function (s) return s.extension().indexOf( 'html' ) > -1 );
-			var contents = spawned.map( function(s) return Tuli.config.files.get( s ) );
+			var contents = spawned.map( function(s) return tuli.config.files.get( s ) );
 			
 			for (i in 0...spawned.length) {
 				var spawn = spawned[i];
@@ -61,12 +62,12 @@ class FrontPage {
 	}
 	
 	public function finish():Void {
-		if (!Tuli.config.files.exists( '${Tuli.config.input}/index.html' )) {
+		if (!tuli.config.files.exists( '${tuli.config.input}/index.html' )) {
 			var pairs = [for (k in fragments.keys()) { e:k, d:fragments.get(k) } ];
 			
 			ArraySort.sort( pairs, function(a, b) return a.d.getTime() > b.d.getTime() ? -1 : a.d.getTime() < b.d.getTime() ? 1 : 0 );
 			
-			var file = Tuli.config.files.get( '${Tuli.config.input}/index.html' );
+			var file = tuli.config.files.get( '${tuli.config.input}/index.html' );
 			var list = [for (p in pairs) p.e].join('\n').parse();
 			var index = file.content.parse();
 			var main = index.find( 'main' );

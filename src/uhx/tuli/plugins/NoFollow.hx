@@ -15,16 +15,17 @@ using sys.FileSystem;
 class NoFollow {
 	
 	public static function main() return NoFollow;
+	private static var tuli:Tuli;
 
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		Tuli.onExtension( 'html', handler, After );
+		tuli.onExtension( 'html', handler, After );
 	}
 	
 	public function handler(file:File) {
 		var dom = file.content.parse();
-		var skip:Array<String> = Tuli.config.extra.plugins.nofollow.skip;
+		var skip:Array<String> = tuli.config.extra.plugins.nofollow.skip;
 		var links = dom.find('a');
 		
 		links = links.filter( function(n) {
