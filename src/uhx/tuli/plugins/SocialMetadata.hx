@@ -19,11 +19,12 @@ class SocialMetadata {
 	private static var files:Array<String> = [];
 	
 	public static function main() return SocialMetadata;
+	private static var tuli:Tuli;
 	
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		Tuli.onExtension( 'html', handler, After );
+		tuli.onExtension( 'html', handler, After );
 	}
 	
 	public function handler(file:File) {
@@ -76,7 +77,7 @@ class SocialMetadata {
 			//trace( file.path );
 			if (alt.length > 0) {
 				img = alt.first().attr('src');
-				var data = new Imagick('${Tuli.config.input}/$img'.normalize());
+				var data = new Imagick('${tuli.config.input}/$img'.normalize());
 				if (data.width >= 280 && data.height >= 150) {
 					dom.find('meta[name="twitter:image"]').setAttr('name', 'twitter:image:src');
 					cardType = 'summary_large_image';

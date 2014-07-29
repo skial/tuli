@@ -16,11 +16,12 @@ using sys.FileSystem;
 class ImageMeta {
 
 	public static function main() return ImageMeta;
+	private static var tuli:Tuli;
 
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		Tuli.onExtension( 'html', handler, After );
+		tuli.onExtension( 'html', handler, After );
 	}
 	
 	public function handler(file:File) {
@@ -31,7 +32,7 @@ class ImageMeta {
 			var src = image.attr( 'src' );
 			
 			if (src.indexOf( 'http' ) == -1) {
-				src = (Tuli.config.input + '/$src').normalize();
+				src = (tuli.config.input + '/$src').normalize();
 			}
 			
 			try {
