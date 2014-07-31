@@ -17,12 +17,13 @@ using sys.FileSystem;
 class ImportHTML {
 	
 	public static function main() return ImportHTML;
+	private static var tuli:Tuli;
 	
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		Tuli.onExtension( 'html', handler, After );
-		//Tuli.onFinish( finish, After );
+		tuli.onExtension( 'html', handler, After );
+		//tuli.onFinish( finish, After );
 	}
 	
 	public function handler(file:File) {
@@ -35,7 +36,7 @@ class ImportHTML {
 			file.ignore = true;
 			
 		} else if (hasInjectPoint) {
-			var output = file.path.replace( Tuli.config.input, Tuli.config.output ).normalize();
+			var output = file.path.replace( tuli.config.input, tuli.config.output ).normalize();
 			//var skip = FileSystem.exists( output ) && FileSystem.stat( output ).mtime.getTime() < file.modified.getTime();
 			
 			//if (!skip) {
@@ -47,7 +48,7 @@ class ImportHTML {
 					if (selector.startsWith('#')) {
 						selector = selector.substring(1);
 						var key = '${selector}.html';
-						var partialFile = Tuli.config.files.filter( function(f) return f.name == selector && f.ext == 'html' )[0];
+						var partialFile = tuli.config.files.filter( function(f) return f.name == selector && f.ext == 'html' )[0];
 						
 						if (partialFile != null) {
 							var partial = partialFile.content.parse();
@@ -78,7 +79,7 @@ class ImportHTML {
 					if (isText) {
 						c = c.replaceWith(items.text().parse());
 					} else if (isJson) {
-						var data = JsonSelect.find(Tuli.config, selector);
+						var data = JsonSelect.find(tuli.config, selector);
 						trace( data.length );
 					} else {
 						c = c.replaceWith(items);

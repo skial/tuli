@@ -13,10 +13,11 @@ using Detox;
 class CodeHighlighter {
 	
 	public static function main() return CodeHighlighter;
+	private static var tuli:Tuli;
 
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
-		Tuli.onExtension('html', handler, After);
+	public function new(t:Tuli) {
+		tuli = t;
+		tuli.onExtension('html', handler, After);
 	}
 	
 	public function handler(file:File) {

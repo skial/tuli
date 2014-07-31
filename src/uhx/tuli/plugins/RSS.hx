@@ -21,54 +21,55 @@ class RSS {
 	
 	private static var feed:File;
 	private static var entry:File;
+	private static var tuli:Tuli;
 	private static var options:RSSConfig;
 	
 	public static function main() return RSS;
 	
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		options = Tuli.config.extra.plugins;
+		options = tuli.config.extra.plugins;
 		
 		if (options.feed_template != null) {
-			feed = new File( '${Tuli.config.input}/${options.feed_template}'.normalize() );
+			feed = new File( '${tuli.config.input}/${options.feed_template}'.normalize() );
 		} else {
-			feed = new File( '${Tuli.config.input}/templates/_feed.rss'.normalize() );
+			feed = new File( '${tuli.config.input}/templates/_feed.rss'.normalize() );
 		}
 		
 		if (options.entry_template != null) {
-			feed = new File( '${Tuli.config.input}/${options.entry_template}'.normalize() );
+			feed = new File( '${tuli.config.input}/${options.entry_template}'.normalize() );
 		} else {
-			entry = new File( '${Tuli.config.input}/templates/_entry.rss'.normalize() );
+			entry = new File( '${tuli.config.input}/templates/_entry.rss'.normalize() );
 		}
 		
-		Tuli.onExtension('md', handler, After);
+		tuli.onExtension('md', handler, After);
 	}
 	
 	public function handler(file:File) {
-		for (f in Tuli.config.files.filter(function(f) {
+		for (f in tuli.config.files.filter(function(f) {
 			return ['_feed.rss', '_entry.rss'].indexOf(f.path) != -1;
 		} )) f.ignore = true;
 		
 		var dir = file.path.directory();
 		if (dir == '') dir = 'articles';
 		var path = '$dir/rss.xml'.normalize();
-		var html = path.replace( Tuli.config.input, 'http://haxe.io/' ).normalize();
+		var html = path.replace( tuli.config.input, 'http://haxe.io/' ).normalize();
 		var id = 'http://haxe.io/$html';
-		
+		trace( id );
 		var xmlFeed = null;
 		
-		if (Tuli.config.files.exists( path )) {
-			xmlFeed = Tuli.config.files.get( path );
+		if (tuli.config.files.exists( path )) {
+			xmlFeed = tuli.config.files.get( path );
 			
 		} else {
 			xmlFeed = feed;
-			Tuli.config.files.push( xmlFeed );
+			tuli.config.files.push( xmlFeed );
 			
 		}
 		
 		if (xmlFeed.content.indexOf(id) == -1) {
-			var dom = Tuli.config.files.get( '${file.path.withoutExtension()}/index.html'.normalize() ).content.parse();;
+			var dom = tuli.config.files.get( '${file.path.withoutExtension()}/index.html'.normalize() ).content.parse();
 			var domFeed = xmlFeed.content.parse();
 			var domEntry = null;
 			
@@ -89,12 +90,6 @@ class RSS {
 				domFeed.find('ttl').next().setAttr('href', 'http://haxe.io/$path');
 				
 				domFeed.find('channel').append( null, domEntry );
-				
-				xmlCache.set( path, domFeed );
-				
-				if (!xmlCache.exists( html + 'index.html' )) {
-					xmlCache.set( html + 'index.html', dom );
-				}
 				
 				var result = domFeed.html();
 				var lowered = ['pubdate>' => 'pubDate>', 'lastbuilddate>' => 'lastBuildDate>'];

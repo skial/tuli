@@ -20,6 +20,7 @@ using uhx.tuli.util.File.Util;
 class Markdown {
 	
 	public static function main() return Markdown;
+	private static var tuli:Tuli;
 	
 	private static var fileCache:Map<String, String>;
 	
@@ -32,20 +33,16 @@ class Markdown {
 	'ö' => '&ouml;',
 	'“'=>'&ldquo;', '”'=>'&rdquo;' ];
 
-	public function new(tuli:Class<Tuli>) {
-		#if neko
-		//untyped uhx.sys.Tuli = tuli;
-		#end
-		
+	public function new(t:Tuli) {
+		tuli = t;
 		if (fileCache == null) fileCache = new Map();
 		
-		Tuli.onExtension('md', handler, Before);
+		tuli.onExtension('md', handler, Before);
 	}
 	
 	public function handler(file:File) {
-		trace(file.path);
 		// The output location to save the generated html.
-		var spawned = (file.path.replace( Tuli.config.input, Tuli.config.output ).withoutExtension() + '/index.html').normalize();
+		var spawned = (file.path.replace( tuli.config.input, tuli.config.output ).withoutExtension() + '/index.html').normalize();
 		var output = spawned;
 		var skip = FileSystem.exists( output ) && file.modified.getTime() < FileSystem.stat( output ).mtime.getTime();
 		
@@ -65,7 +62,7 @@ class Markdown {
 			// Look for a template in the markdown `[_template]: /path/file.html`
 			var template = resources.exists('_template') ? resources.get('_template') : { url:'', title:'' };
 			var location = if (template.url == '') {
-				'${Tuli.config.input}/templates/_template.html'.normalize();
+				'${tuli.config.input}/templates/_template.html'.normalize();
 			} else {
 				(file.path.directory() + '/${template.url}').normalize();
 			}
@@ -88,18 +85,18 @@ class Markdown {
 			}
 			
 			var content = '';
-			var tuliFiles = Tuli.config.files.filter( function(f) return [location].indexOf( f.path ) > -1 );
+			var tuliFiles = tuli.config.files.filter( function(f) return [location].indexOf( f.path ) > -1 );
 			for (tuliFile in tuliFiles) tuliFile.ignore = true;
 			
 			if (!fileCache.exists( location )) {
 				// Grab the templates content.
-				if (Tuli.config.files.exists( location )) {
-					content = Tuli.config.files.get( location ).content;
+				if (tuli.config.files.exists( location )) {
+					content = tuli.config.files.get( location ).content;
 					fileCache.set( location, content );
 				} else {
 					var f = new File( location );
 					content = f.content;
-					Tuli.config.files.push( f );
+					tuli.config.files.push( f );
 					fileCache.set( location, content );
 				}
 			} else {
@@ -125,7 +122,7 @@ class Markdown {
 				spawn.created = file.created;
 				spawn.modified = file.modified;
 				
-				Tuli.config.spawn.push( spawn );
+				tuli.config.spawn.push( spawn );
 			}
 			
 		}

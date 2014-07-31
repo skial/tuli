@@ -67,21 +67,85 @@ typedef TuliPlugin = {
  */
 class Tuli {
 	
-	public static var configFile:File;
-	public static var config:TuliConfig;
-	public static var secretFile:File;
-	public static var secrets:Dynamic;
+	public var config:TuliConfig;
+	private var configFile:File;
 	
-	// Every single file.
-	//public static var files:Array<File> = [];
-	//public static var fileCache:Map<String, String> = new Map();
+	public var secrets:Dynamic;
+	private var secretFile:File;
 	
-	private static var extPluginsBefore:Map<String, Array<File->Void>> = new Map();
-	private static var extPluginsAfter:Map<String, Array<File->Void>> = new Map();
+	private var extPluginsBefore:Map<String, Array<File->Void>> = new Map();
+	private var extPluginsAfter:Map<String, Array<File->Void>> = new Map();
+	
+	private var dataPluginsBefore:Array<Dynamic->Dynamic> = [];
+	private var dataPluginsAfter:Array<Dynamic->Dynamic> = [];
+	
+	private var finishCallbacksBefore:Array<Void->Void> = [];
+	private var finishCallbacksAfter:Array<Void->Void> = [];
+	
+	private var classes:Map<String, Class<TuliPlugin>> = new Map();
+	private var instances:Map<String, TuliPlugin> = new Map();
+	
+	public function new(cf:File) {
+		if ( cf == null ) throw 'The configuration file can not be null.';
+		
+		configFile = cf;
+		config = Json.parse( configFile.content );
+		
+		if ( config != null ) {
+			
+			// Clear the list of generated files.
+			config.spawn = [];
+			
+			if (config.files == null) config.files = [];
+			
+			// If `output` is null set it to output provided to the compiler.
+			if (config.output != null) {
+				config.output = config.output.fullPath().normalize();
+				
+			}
+			
+			if (config.input != null) {
+				config.input = config.input.fullPath().normalize();
+				
+			}
+			
+			if ('${Sys.getCwd()}/secrets.json'.normalize().exists()) {
+				secretFile = new File( '${Sys.getCwd()}/secrets.json'.normalize() );
+				secrets = Json.parse( secretFile.content );
+				
+			} else {
+				secrets = { };
+				
+			}
+			
+			if (config.plugins.length > 0) {
+				var libs = [];
+				
+				for (plugin in config.plugins) for (name in plugin.fields()) {
+					// Field equals the haxelib name
+					libs.push( name );
+					libs = libs.concat( (plugin.field( name ):Array<String>) );
+				}
+				
+				var tappi = new Tappi(libs, true);
+				
+				tappi.find();
+				tappi.load();
+				
+				for (id in tappi.libraries) if (tappi.classes.exists( id )) {
+					var cls:Class<TuliPlugin> = cast tappi.classes.get( id );
+					instances.set( id, Type.createInstance( cls, [this] ));
+				}
+				
+			}
+			
+		}
+		
+	}
 	
 	// Register a callback that is interested in a certain extension.
 	// This allows for multiply extensions to deal with the same file.
-	public static function onExtension(extension:String, callback:File->Void, ?when:TuliState):Void {
+	public function onExtension(extension:String, callback:File->Void, ?when:TuliState):Void {
 		if (when == null) when = Before;
 		switch (when) {
 			case Before:
@@ -101,12 +165,9 @@ class Tuli {
 		}
 	}
 	
-	private static var dataPluginsBefore:Array<Dynamic->Dynamic> = [];
-	private static var dataPluginsAfter:Array<Dynamic->Dynamic> = [];
-	
 	// Register a callback that adds data to the global `config.data` object.
 	// This is currently not saved, so the data has to be recreated on each call.
-	public static function onData(callback:Dynamic->Dynamic, ?when:TuliState):Void {
+	public function onData(callback:Dynamic->Dynamic, ?when:TuliState):Void {
 		if (when == null) when = Before;
 		switch (when) {
 			case Before: dataPluginsBefore.push( callback );
@@ -114,10 +175,7 @@ class Tuli {
 		}
 	}
 	
-	private static var finishCallbacksBefore:Array<Void->Void> = [];
-	private static var finishCallbacksAfter:Array<Void->Void> = [];
-
-	public static function onFinish(callback:Void->Void, ?when:TuliState):Void {
+	public function onFinish(callback:Void->Void, ?when:TuliState):Void {
 		if (when == null) when = After;
 		switch (when) {
 			case After: finishCallbacksAfter.push( callback );
@@ -125,73 +183,8 @@ class Tuli {
 		}
 	}
 	
-	private static var classes:Map<String, Class<TuliPlugin>> = new Map();
-	private static var instances:Map<String, TuliPlugin> = new Map();
-	
-	private static var isSetup:Bool = false;
-	public static var time:Float = .0;
-	
-	public static function initialize():Void {
-		time = Timer.stamp();
-		
-		if (isSetup == false) {
-			
-			if ( config != null ) {
-				
-				// Clear the list of generated files.
-				config.spawn = [];
-				
-				if (config.files == null) config.files = [];
-				
-				// If `output` is null set it to output provided to the compiler.
-				if (config.output != null) {
-					config.output = config.output.fullPath().normalize();
-					
-				}
-				
-				if (config.input != null) {
-					config.input = config.input.fullPath().normalize();
-					
-				}
-				
-				if ('${Sys.getCwd()}/secrets.json'.normalize().exists()) {
-					secretFile = new File( '${Sys.getCwd()}/secrets.json'.normalize() );
-					secrets = Json.parse( secretFile.content );
-					
-				} else {
-					secrets = { };
-					
-				}
-				
-				if (config.plugins.length > 0) {
-					var libs = [];
-					
-					for (plugin in config.plugins) for (name in plugin.fields()) {
-						// field equals the haxelib name
-						libs.push( name );
-						libs = libs.concat( (plugin.field( name ):Array<String>) );
-					}
-					
-					var tappi = new Tappi(libs, true);
-					
-					tappi.find();
-					tappi.load();
-					
-					for (id in tappi.libraries) if (tappi.classes.exists( id )) {
-						var cls:Class<TuliPlugin> = cast tappi.classes.get( id );
-						instances.set( id, Type.createInstance( cls, [Tuli] ));
-					}
-					
-				}
-				
-			}
-			
-			isSetup = true;
-		}
-	}
-	
-	public static function input(path:String) {
-		path = '$path/'.normalize();
+	public function start() {
+		var path = '${config.input}/'.normalize();
 		
 		// Find all files in `path`.
 		var allItems = path.readDirectory();
@@ -249,10 +242,9 @@ class Tuli {
 		
 		// Recreate everything in `config.output` directory.
 		finish();
-		trace( Timer.stamp() - time );
 	}
 	
-	public static function finish() {
+	public function finish() {
 		// Build `config.data` from the data plugins.
 		for (cb in dataPluginsAfter) config.extra = cb(config.extra);
 		
@@ -307,7 +299,7 @@ class Tuli {
 	}
 	
 	// Recursively create the directory in `config.output`.
-	private static function createDirectory(path:String) {
+	private function createDirectory(path:String) {
 		if (!path.directory().addTrailingSlash().exists()) {
 			
 			var parts = path.directory().split('/');
@@ -326,7 +318,7 @@ class Tuli {
 		}
 	}
 	
-	private static function save(file:File) {
+	private function save(file:File) {
 		var input = file.path.normalize();
 		var output = file.path.replace(config.input, config.output).normalize().replace(' ', '-');
 		
@@ -338,7 +330,7 @@ class Tuli {
 	}
 	
 	// This just spits out the correct format. Its not utc aware.
-	public static function asISO8601(d:Date):String {
+	public function asISO8601(d:Date):String {
 		var YYYY = d.getFullYear();
 		var MM = d.getMonth() + 1;
 		var DD = d.getDay() + 1;
@@ -348,11 +340,11 @@ class Tuli {
 		return '$YYYY-${MM<10?"0"+MM:""+MM}-${DD<10?"0"+DD:""+DD}T${hh<10?"0"+hh:""+hh}:${mm<10?"0"+mm:""+mm}:${ss<10?"0"+ss:""+ss}Z';
 	}
 	
-	private static inline function tempFile(path:String):File {
-		return new File( (Tuli.config.input + '/$path').normalize() );
+	private inline function tempFile(path:String):File {
+		return new File( (config.input + '/$path').normalize() );
 	}
 	
-	public static function isNewer(a:File, b:File):Bool {
+	public function isNewer(a:File, b:File):Bool {
 		
 		switch ([a.path.exists(), b.path.exists()]) {
 			case [true, false]: return true;
@@ -373,7 +365,7 @@ class Tuli {
 	
 }
 
-private typedef Commit = {
+/*private typedef Commit = {
 	var sha:String;
 	var commit: {
 		author: { name:String, email:String, date:String },
@@ -403,9 +395,9 @@ private typedef Commit = {
 	var parents: {
 		sha:String, url:String, html_url:String
 	};
-}
+}*/
 
-class GithubInformation /*implements Klas*/ {
+/*class GithubInformation {
 	
 	//#if macro
 	public static function initialize() {
@@ -519,4 +511,4 @@ class GithubInformation /*implements Klas*/ {
 	}
 	//#end
 	
-}
+}*/

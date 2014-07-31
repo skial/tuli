@@ -15,11 +15,12 @@ using sys.FileSystem;
 class ImageLetterbox {
 	
 	public static function main() return ImageLetterbox;
+	private static var tuli:Tuli;
 
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		Tuli.onExtension( 'html', handler, After );
+		tuli.onExtension( 'html', handler, After );
 	}
 	
 	private static var counter:Int = 0;

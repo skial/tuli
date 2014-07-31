@@ -22,7 +22,7 @@ using Lambda;
 class LibRunner implements Klas {
 	
 	static function main() {
-		var tuli = new LibRunner( Sys.args() );
+		var runner = new LibRunner( Sys.args() );
 	}
 	
 	/**
@@ -66,6 +66,8 @@ class LibRunner implements Klas {
 	@alias('f') 
 	public var file:String = 'config.json';
 	
+	private var tuli:Tuli;
+	
 	public function new(args:Array<String>) {
 		var set = [global, clean, build, update, test].filter( function(b) {
 			return b;
@@ -74,6 +76,7 @@ class LibRunner implements Klas {
 		if (set.length == 0) {
 			// Make update the default action.
 			update = true;
+			
 		}
 		
 		directory = args[args.length - 1].normalize();
@@ -82,34 +85,36 @@ class LibRunner implements Klas {
 		Sys.setCwd( directory );
 		
 		if (file.exists()) {
-			Tuli.configFile = new uhx.tuli.util.File( file );
-			Tuli.config = Json.parse( Tuli.configFile.content );
+			tuli = new Tuli( new uhx.tuli.util.File( file ) );
+			
 		} else {
 			Sys.println( 'A configuration file could not be found in $directory, please use -f <path> to set one.' );
 			return;
+			
 		}
 		
 		if (global) makeGlobal();
 		
 		if (clean) {
 			runClean();
+			
 		}
 		
 		if (build) {
-			Tuli.initialize();
 			runClean();
 			runBuild();
+			
 		}
 		
 		if (update) {
-			Tuli.initialize();
 			runUpdate();
+			
 		}
 		
 		if (test) {
-			Tuli.initialize();
 			runUpdate();
 			serve();
+			
 		}
 	}
 	
@@ -119,17 +124,18 @@ class LibRunner implements Klas {
 		if (!Sys.environment().exists( 'HAXEPATH' )) {
 			Sys.println( 'The enviroment HAXEPATH does not exist.' );
 			return;
+			
 		}
 		
 		var path = Sys.environment().get( 'HAXEPATH' ).normalize();
 		
 		switch (Sys.systemName().toLowerCase()) {
 			case _.indexOf( 'windows' ) > -1 => true if ('$path/tuli.bat'.normalize().exists()):
-				Sys.println( 'Tuli is already global.' );
+				Sys.println( 'Tuli has already been made global.' );
 				return;
 				
 			case _ if ('$path/tuli.sh'.normalize().exists()): 
-				Sys.println( 'Tuli is already global.' );
+				Sys.println( 'Tuli has already been made global.' );
 				return;
 				
 		}
@@ -146,20 +152,21 @@ class LibRunner implements Klas {
 				
 			case _: 
 				Sys.println( 'Can not determine the OS type, apologies.' );
+				
 		}
 	}
 	
 	private function runClean() {
-		FileSystem.deleteDirectory( Tuli.config.output );
-		FileSystem.createDirectory( Tuli.config.output );
+		FileSystem.deleteDirectory( tuli.config.output );
+		FileSystem.createDirectory( tuli.config.output );
 	}
 	
 	private function runBuild() {
-		Tuli.input( Tuli.config.input );
+		tuli.start();
 	}
 	
 	private function runUpdate() {
-		Tuli.input( Tuli.config.input );
+		tuli.start();
 	}
 	
 	private function serve() {

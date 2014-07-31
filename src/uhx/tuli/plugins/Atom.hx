@@ -19,18 +19,19 @@ class Atom {
 	private static var xmlCache:Map<String, DOMCollection> = new Map();
 	
 	public static function main() return Atom;
+	private static var tuli:Tuli;
 	
-	public function new(tuli:Class<Tuli>) {
-		untyped Tuli = tuli;
+	public function new(t:Tuli) {
+		tuli = t;
 		
-		if (feed == null) feed = new File( '${Tuli.config.input}/templates/_feed.atom'.normalize() );
-		if (entry == null) entry = new File( '${Tuli.config.input}/templates/_entry.atom'.normalize() );
+		if (feed == null) feed = new File( '${tuli.config.input}/templates/_feed.atom'.normalize() );
+		if (entry == null) entry = new File( '${tuli.config.input}/templates/_entry.atom'.normalize() );
 		
-		Tuli.onExtension('md', handler, After);
+		tuli.onExtension('md', handler, After);
 	}
 	
 	public function handler(file:File) {
-		for (file in Tuli.config.files.filter(function(f) {
+		for (file in tuli.config.files.filter(function(f) {
 			return ['_feed.atom', '_entry.atom'].indexOf(f.path) != -1;
 		} )) file.ignore = true;
 		
@@ -42,16 +43,16 @@ class Atom {
 		
 		var xmlFeed = null;
 		
-		//if (Tuli.fileCache.exists( path )) {
-		if (Tuli.config.files.exists( path )) {
-			xmlFeed = Tuli.config.files.get( path );
+		//if (tuli.fileCache.exists( path )) {
+		if (tuli.config.files.exists( path )) {
+			xmlFeed = tuli.config.files.get( path );
 			
 		} else {
 			xmlFeed = feed;
 			
 		}
 		
-		if (xmlFeed.content.indexOf(id) == -1 && Tuli.config.files.exists( '${html}index.html' )) {
+		if (xmlFeed.content.indexOf(id) == -1 && tuli.config.files.exists( '${html}index.html' )) {
 			var dom = null;
 			var domFeed = null;
 			var domEntry = null;
@@ -60,7 +61,7 @@ class Atom {
 				dom = xmlCache.get( html + 'index.html' );
 				
 			} else {
-				dom = Tuli.config.files.get( html + 'index.html' ).content.parse();
+				dom = tuli.config.files.get( html + 'index.html' ).content.parse();
 				
 			}
 			
@@ -81,10 +82,10 @@ class Atom {
 				domEntry.find('title').setText( title );
 				domEntry.find('summary').setText( dom.find('p').first().text() );
 				domEntry.find('content').setAttr('src', id).setAttr('type','text/html');
-				domEntry.find('published').setText( Tuli.asISO8601( file.created ) );
+				domEntry.find('published').setText( tuli.asISO8601( file.created ) );
 				
-				domFeed.find('updated').setText( Tuli.asISO8601( file.modified ) );
-				domEntry.find('updated').setText( Tuli.asISO8601( file.modified ) );
+				domFeed.find('updated').setText( tuli.asISO8601( file.modified ) );
+				domEntry.find('updated').setText( tuli.asISO8601( file.modified ) );
 				
 				domFeed.find('link').setAttr('href', 'http://haxe.io/$path');
 				domFeed.first().next().append( null, domEntry );
