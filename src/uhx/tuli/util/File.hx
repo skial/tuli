@@ -133,7 +133,7 @@ class File {
 
 class Util {
 	
-	public static function exists(files:Array<File>, path:String):Bool {
+	public static function exists<T:{path:String}>(files:Array<T>, path:String):Bool {
 		var result = false;
 		
 		for (file in files) if (file.path == path) {
@@ -144,7 +144,7 @@ class Util {
 		return result;
 	}
 	
-	public static function get(files:Array<File>, path:String):File {
+	public static function get<T:{path:String}>(files:Array<T>, path:String):T {
 		var result = null;
 		
 		for (file in files) if (file.path == path) {
