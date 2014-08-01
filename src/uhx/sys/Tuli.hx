@@ -74,6 +74,9 @@ class Tuli {
 	public var secrets:Dynamic;
 	private var secretFile:File;
 	
+	private var allFilesBefore:Array<Array<File>->Array<File>> = [];
+	private var allFilesAfter:Array<Array<File>->Array<File>> = [];
+	
 	private var extPluginsBefore:Map<String, Array<File->Void>> = new Map();
 	private var extPluginsAfter:Map<String, Array<File->Void>> = new Map();
 	
@@ -142,6 +145,18 @@ class Tuli {
 			
 		}
 		
+	}
+	
+	public function onAllFiles(callback:Array<File>->Array<File>, ?when:TuliState):Void {
+		if (when == null) when = Before;
+		switch (when) {
+			case Before:
+				allFilesBefore.push( callback );
+				
+			case After:
+				allFilesAfter.push( callback );
+				
+		}
 	}
 	
 	// Register a callback that is interested in a certain extension.
@@ -228,12 +243,17 @@ class Tuli {
 		// Build `config.data` from the data plugins.
 		for (cb in dataPluginsBefore) config.extra = cb(config.extra);
 		
+		// Send all the files at once to each callback.
+		for (cb in allFilesBefore) config.files = cb( config.files );
+		
 		// Send files to content plugins for modification.
+		var any = extPluginsBefore.get('*');
 		for (extension in extPluginsBefore.keys()) {
 			var cbs = extPluginsBefore.get( extension );
 			var files = config.files.filter( function(s) return s.ext == extension );
 			//var contents = files.map( function(s) return if (s.ext == 'html') loadHTML('$path/${s.path}') else '$path/${s.path}'.getContent() );
 			
+			if (any != null) for (file in files) for (a in any) a(file);
 			for (file in files) for (cb in cbs) cb(file);
 		}
 		
@@ -249,11 +269,16 @@ class Tuli {
 		// Build `config.data` from the data plugins.
 		for (cb in dataPluginsAfter) config.extra = cb(config.extra);
 		
+		// Send all the files at once to each callback.
+		for (cb in allFilesAfter) config.files = cb( config.files );
+		
 		// Send files to content plugins for modification if not in `fileCache`.
+		var any = extPluginsAfter.get('*');
 		for (extension in extPluginsAfter.keys()) {
 			var cbs = extPluginsAfter.get( extension );
 			var files = config.files.filter( function(s) return s.ext == extension );
 			
+			if (any != null) for (file in files) for (a in any) a(file);
 			for (file in files) for (cb in cbs) cb( file );
 		}
 		
