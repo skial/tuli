@@ -20,7 +20,7 @@ private class Item {
 	public var social:String;
 	
 	public function new(url:String, title:String, created:Date, modified:Date, social:String) {
-		this.url = url;
+		this.url = url.replace(' ', '-');
 		this.title = title;
 		this.created = created;
 		this.modified = modified;
@@ -28,14 +28,21 @@ private class Item {
 	}
 	
 	public function toString():String {
-		return '
-		<li itemscope="" itemtype="http://schema.org/Article" id="${url.replace('/','_')}">
+		var id = url.removeTrailingSlashes();
+		
+		for (character in [' ', '/', '.', '-']) {
+			id = id.replace(character, '_');
+		}
+		
+		var c = created.toString();
+		var m = modified.toString();
+		
+		return '<li itemscope="" itemtype="http://schema.org/Article" id="$id">
 			<h1 itemprop="headline">
 				<a itemprop="url" href="/$url" title="$title">$title</a>
 			</h1>
-			<time pubdate="${created.toString()}" datetime="${modified.toString()}" dateCreated="${created.toString()}"></time>
-		</li>
-		';
+			<time pubdate="$c" datetime="$m" dateCreated="$c"></time>
+		</li>';
 	}
 	
 }
@@ -73,7 +80,7 @@ class FrontPage {
 				var content = contents[i].content;
 				var dom = content.parse();
 				var item = new Item(
-					spawn.directory().addTrailingSlash(),
+					spawn.replace( tuli.config.output, '' ).directory().addTrailingSlash(),
 					dom.find( 'article h1:first-of-type' ).text(),
 					file.created, file.modified, dom.find( '[alt*="social"]' ).first().attr('src')
 				);
@@ -102,10 +109,10 @@ class FrontPage {
 			var cssRules = [];
 			var cssParser = new CssParser();
 			
-			for (item in fragments) {
-				html = list.toString();
+			for (item in fragments) if (item.social != '') {
+				html = item.toString();
 				list.push( html );
-				cssRules.push( cssParser.toTokens( ByteData.ofString( '#${item.url.replace("/","_")} {url(${item.social});}' ), 'frontpage-css1' ) );
+				cssRules.push( cssParser.toTokens( ByteData.ofString( '#${html.parse().first().attr("id")} {background-image:url(${item.social});}' ), 'frontpage-css1' ) );
 			}
 			
 			if (css != null) {
@@ -114,7 +121,7 @@ class FrontPage {
 				css.content = [for (token in tokens) cssParser.printString( token )].join('\r\n');
 			}
 			
-			var items = list.join('\n').parse();
+			var items = list.join('\r\n').parse();
 			var index = file.content.parse();
 			var main = index.find( 'main' );
 			
