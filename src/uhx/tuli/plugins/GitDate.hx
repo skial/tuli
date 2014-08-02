@@ -65,20 +65,12 @@ class GitDate {
 			
 			if (justDigits && files.exists( file.fullPath().normalize() )) {
 				match = files.position( file.fullPath().normalize() );
-				var prev = files[match].created;
 				files[match].created = files[match].modified = date = Date.fromTime( string.parseFloat() );
-				if (prev.getTime() != files[match].created.getTime()) {
-					trace( file );
-				}
 				index += 2;
 				
 			} else if (date != null && files.exists( string.fullPath().normalize() )) {
 				match = files.position( string.fullPath().normalize() );
-				var prev = files[match].created;
 				files[match].created = files[match].modified = date;
-				if (prev.getTime() != files[match].created.getTime()) {
-					trace( string );
-				}
 				index++;
 				
 			} else {
