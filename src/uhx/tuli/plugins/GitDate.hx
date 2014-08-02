@@ -1,10 +1,16 @@
 package uhx.tuli.plugins;
 
-import sys.io.Process;
+import sys.FileSystem;
 import uhx.sys.Tuli;
+import sys.io.Process;
+import haxe.ds.ArraySort;
 import uhx.tuli.util.File;
 
+using Std;
 using StringTools;
+using haxe.io.Path;
+using sys.FileSystem;
+using uhx.tuli.util.File.Util;
 
 /**
  * ...
@@ -33,8 +39,54 @@ class GitDate {
 		process.exitCode();
 		process.close();
 		
-		var dates = output.split('\n');
-		trace( dates );
+		var list = output
+			.split('\n')
+			.filter( function(s) return s.trim() != '' );
+		
+		var index = -1;
+		var date:Date = null;
+		var string = '';
+		var file = '';
+		var match = null;
+		
+		while (index < list.length-2) {
+			string = list[index + 1];
+			file = list[index + 2];
+			var justDigits = false;
+			
+			for (i in 0...string.length) {
+				if (string.charCodeAt(i) >= '0'.code && string.charCodeAt(i) <= '9'.code) {
+					justDigits = true;
+				} else {
+					justDigits = false;
+					break;
+				}
+			}
+			
+			if (justDigits && files.exists( file.fullPath().normalize() )) {
+				match = files.position( file.fullPath().normalize() );
+				var prev = files[match].created;
+				files[match].created = files[match].modified = date = Date.fromTime( string.parseFloat() );
+				if (prev.getTime() != files[match].created.getTime()) {
+					trace( file );
+				}
+				index += 2;
+				
+			} else if (date != null && files.exists( string.fullPath().normalize() )) {
+				match = files.position( string.fullPath().normalize() );
+				var prev = files[match].created;
+				files[match].created = files[match].modified = date;
+				if (prev.getTime() != files[match].created.getTime()) {
+					trace( string );
+				}
+				index++;
+				
+			} else {
+				index++;
+				
+			}
+			
+		}
 		
 		return files;
 	}
