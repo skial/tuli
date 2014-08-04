@@ -43,6 +43,28 @@ class GitDate {
 			.split('\n')
 			.filter( function(s) return s.trim() != '' );
 		
+		files = setCreated( list, files );
+		
+		return files;
+	}
+	
+	private function isDigits(value:String):Bool {
+		var result = true;
+		var code = -1;
+		
+		for (i in 0...value.length) {
+			code = value.charCodeAt(i);
+			
+			if (code < '0'.code || code > '9'.code) {
+				result = false;
+				break;
+			}
+		}
+		
+		return result;
+	}
+	
+	private function setCreated(list:Array<String>, files:Array<File>):Array<File> {
 		var index = -1;
 		var date:Date = null;
 		var string = '';
@@ -51,26 +73,16 @@ class GitDate {
 		
 		while (index < list.length-2) {
 			string = list[index + 1];
-			file = list[index + 2];
-			var justDigits = false;
+			file = list[index + 2].fullPath().normalize();
 			
-			for (i in 0...string.length) {
-				if (string.charCodeAt(i) >= '0'.code && string.charCodeAt(i) <= '9'.code) {
-					justDigits = true;
-				} else {
-					justDigits = false;
-					break;
-				}
-			}
-			
-			if (justDigits && files.exists( file.fullPath().normalize() )) {
-				match = files.position( file.fullPath().normalize() );
-				files[match].created = files[match].modified = date = Date.fromTime( string.parseFloat() );
+			if (isDigits( file ) && files.exists( file )) {
+				match = files.position( file );
+				files[match].created = date = Date.fromTime( string.parseFloat() );
 				index += 2;
 				
-			} else if (date != null && files.exists( string.fullPath().normalize() )) {
-				match = files.position( string.fullPath().normalize() );
-				files[match].created = files[match].modified = date;
+			} else if (date != null && files.exists( string = string.fullPath().normalize() )) {
+				match = files.position( string );
+				files[match].created = date;
 				index++;
 				
 			} else {
