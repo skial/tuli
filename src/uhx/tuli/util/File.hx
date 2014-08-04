@@ -133,17 +133,6 @@ class File {
 
 class Util {
 	
-	public static function position(files:Array<File>, path:String):Int {
-		var result = -1;
-		
-		for (i in 0...files.length) if (files[i].path == path) {
-			result = i;
-			break;
-		}
-		
-		return result;
-	}
-	
 	public static function exists(files:Array<File>, path:String):Bool {
 		var result = false;
 		
