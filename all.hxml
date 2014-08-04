@@ -90,3 +90,8 @@
 
 -neko responsiveembed.n
 -main uhx.tuli.plugins.ResponsiveEmbed
+
+--next
+
+-neko gitdate.n
+-main uhx.tuli.plugins.GitDate
