@@ -33,19 +33,35 @@ class GitDate {
 			.filter( function(s) return s.trim() != '' )
 			.map( function(s) return '"$s"' );
 		
-		var process = new Process('git', ['log', '--format=%at', '--name-only', '--diff-filter=A', '--'].concat( paths ));
+		// Get a list of dates & files for when they where first committed.
+		var created = gitLog('A', paths);
+		// Get a list of dates & files for when they where last modified.
+		var modified = gitLog('M', paths);
+		
+		files = setCreated( created, files );
+		files = setModified( modified, files );
+		
+		return files;
+	}
+	
+	private function gitLog(type:String, paths:Array<String>):Array<String> {
+		var process = new Process('git', ['log', '--format=%at', '--name-only', '--diff-filter=$type', '--'].concat( paths ));
 		var output = process.stdout.readAll().toString();
 		
 		process.exitCode();
 		process.close();
 		
-		var list = output
-			.split('\n')
-			.filter( function(s) return s.trim() != '' );
-		
-		files = setCreated( list, files );
-		
-		return files;
+		/**
+		 * The output is similar to the following:
+		 * 
+		 * 0123456789\n
+		 * path/to/file.txt\n
+		 * path/to/another/file.txt\n
+		 * \n
+		 * 0123456789\n
+		 * path/to/a/different/file.txt\n
+		 */
+		return output.split('\n').filter( function(s) return s.trim() != '' );
 	}
 	
 	private function isDigits(value:String):Bool {
@@ -64,25 +80,22 @@ class GitDate {
 		return result;
 	}
 	
-	private function setCreated(list:Array<String>, files:Array<File>):Array<File> {
+	private function setDate(list:Array<String>, files:Array<File>, access:File->Date->Void):Array<File> {
+		var path = '';
 		var index = -1;
+		var number = '';
 		var date:Date = null;
-		var string = '';
-		var file = '';
-		var match = null;
 		
 		while (index < list.length-2) {
-			string = list[index + 1];
-			file = list[index + 2].fullPath().normalize();
+			number = list[index + 1];
+			path = list[index + 2].fullPath().normalize();
 			
-			if (isDigits( file ) && files.exists( file )) {
-				match = files.position( file );
-				files[match].created = date = Date.fromTime( string.parseFloat() );
+			if (isDigits( number ) && files.exists( path )) {
+				access(files.get( path ), date = Date.fromTime( number.parseFloat() ));
 				index += 2;
 				
-			} else if (date != null && files.exists( string = string.fullPath().normalize() )) {
-				match = files.position( string );
-				files[match].created = date;
+			} else if (date != null && files.exists( number = number.fullPath().normalize() )) {
+				access(files.get( number ), date);
 				index++;
 				
 			} else {
@@ -93,6 +106,14 @@ class GitDate {
 		}
 		
 		return files;
+	}
+	
+	private inline function setCreated(list:Array<String>, files:Array<File>):Array<File> {
+		return setDate(list, files, function(f, d) f.created = d);
+	}
+	
+	private inline function setModified(list:Array<String>, files:Array<File>):Array<File> {
+		return setDate(list, files, function(f, d) f.modified = d);
 	}
 	
 }
