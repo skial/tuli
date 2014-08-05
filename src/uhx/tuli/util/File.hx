@@ -1,11 +1,12 @@
 package uhx.tuli.util;
 
+import geo.TzDate;
 import sys.io.Process;
 
 using StringTools;
 using sys.io.File;
-using sys.FileSystem;
 using haxe.io.Path;
+using sys.FileSystem;
 
 /**
  * ...
@@ -20,8 +21,8 @@ class File {
 	public var ignore:Bool = false;
 	public var fetched(get, null):Bool;
 	public var spawned:Array<String> = [];
-	@:isVar public var created(get, set):Date;
-	@:isVar public var modified(get, set):Date;
+	@:isVar public var created(get, set):TzDate;
+	@:isVar public var modified(get, set):TzDate;
 	@:isVar public var content(get, set):String;
 
 	public function new(path:String) {
@@ -50,13 +51,13 @@ class File {
 		return content == null;
 	}
 	
-	private function get_created():Date {
+	private function get_created():TzDate {
 		if (created == null) {
 			if (path.exists()) {
 				created = path.stat().ctime;
 				
 			} else {
-				created = Date.now();
+				created = TzDate.now();
 				
 			}
 		}
@@ -64,18 +65,18 @@ class File {
 		return created;
 	}
 	
-	private function set_created(d:Date):Date {
+	private function set_created(d:TzDate):TzDate {
 		created = d;
 		return d;
 	}
 	
-	private function get_modified():Date {
+	private function get_modified():TzDate {
 		if (modified == null) {
 			if (path.exists()) {
 				modified = path.stat().ctime;
 				
 			} else {
-				modified = Date.now();
+				modified = TzDate.now();
 				
 			}
 		}
@@ -83,7 +84,7 @@ class File {
 		return modified;
 	}
 	
-	private function set_modified(d:Date):Date {
+	private function set_modified(d:TzDate):TzDate {
 		modified = d;
 		return d;
 	}
