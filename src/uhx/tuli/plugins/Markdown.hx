@@ -1,6 +1,7 @@
 package uhx.tuli.plugins;
 
 import dtx.Tools;
+import geo.TzDate;
 import uhx.sys.Tuli;
 import byte.ByteData;
 import uhx.tuli.util.File;
@@ -54,8 +55,14 @@ class Markdown {
 			var resources = new Map<String, {url:String,title:String}>();
 			parser.filterResources( tokens, resources );
 			
-			if (file.extra.md == null) file.extra.md = { };
-			file.extra.md.resources = resources;
+			if (file.data.md == null) {
+				file.data.md = { };
+			}
+			
+			file.data.md.resources = resources;
+			
+			// Using information from `resources` update the `file` properties.
+			if (resources.exists('date')) file.created = TzDate.fromFormat( resources.get('date').title );
 			
 			var html = [for (token in tokens) parser.printHTML( token, resources )].join('');
 			
@@ -108,17 +115,14 @@ class Markdown {
 			for (key in characters.keys()) html = html.replace( characters.get(key), key );
 			dom.find('content[select="markdown"]').replaceWith( null, dtx.Tools.parse( html ) );
 			content = dom.html();
-			/*if (file.path.toLowerCase().indexOf( 'one year of haxe' ) > -1) {
-				trace( dtx.Tools.parse( html ) );
-				trace( content );
-			}*/
+			
 			if (file.spawned.indexOf( spawned ) == -1) {
 				file.spawned.push( spawned );
 				
 				var spawn = new Spawn( spawned, file.path );
 				spawn.content = content;
-				spawn.extra.md = {};
-				spawn.extra.md.resources = resources;
+				spawn.data.md = {};
+				spawn.data.md.resources = resources;
 				spawn.created = file.created;
 				spawn.modified = file.modified;
 				
