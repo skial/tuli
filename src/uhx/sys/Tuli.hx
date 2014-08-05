@@ -220,22 +220,30 @@ class Tuli {
 		
 		allItems = new AlphabeticalSort().alphaSort( allItems );
 		
-		var newItems = allItems.filter( function(a) return !config.files.exists( function(b) return a == b.path ) );
-		var missingItems = config.files.filter( function(a) return !allItems.exists( function(b) return a.path == b ) );
-		
-		for (missing in missingItems) {
-			config.files.remove( missing );
-		}
-		
+		// Turn all paths into `File`.
 		config.files = config.files.concat( 
-			[for (newItem in newItems) if (!'$path/$newItem'.isDirectory()) {
-				new File( '$path/$newItem'.normalize() );
+			[for (item in allItems) if (!'$path/$item'.isDirectory()) {
+				new File( '$path/$item'.normalize() );
 			}]
 		);
 		
+		// Find all files and directories starting with `_` and set 
+		// `ignore = true` on the file.
+		for (file in config.files) {
+			if (file.name.startsWith('_')) {
+				file.ignore = true;
+				continue;
+			}
+			
+			var parts = file.path.directory().split('/');
+			if (parts[parts.length - 1].startsWith('_')) file.ignore = true;
+		}
+		
 		// Set any file matching `config.ignore` with its extension
 		// to be ignored.
-		for (file in config.files) if (config.ignore.indexOf( file.ext ) > -1) file.ignore = true;
+		for (file in config.files) if (config.ignore.indexOf( file.ext ) > -1) {
+			file.ignore = true;
+		}
 		
 		// Clear the files `spawned` array.
 		for (file in config.files) file.spawned = [];
