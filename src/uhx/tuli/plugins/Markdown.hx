@@ -21,9 +21,7 @@ using uhx.tuli.util.File.Util;
 class Markdown {
 	
 	public static function main() return Markdown;
-	private static var tuli:Tuli;
-	
-	private static var fileCache:Map<String, String>;
+	private var tuli:Tuli;
 	
 	// I hate this, need to spend some time on UTF8 so I dont have to manually
 	// add international characters.
@@ -36,8 +34,6 @@ class Markdown {
 
 	public function new(t:Tuli) {
 		tuli = t;
-		if (fileCache == null) fileCache = new Map();
-		
 		tuli.onExtension('md', handler, Before);
 	}
 	
@@ -59,29 +55,32 @@ class Markdown {
 				file.data.md = { };
 			}
 			
+			// Attach the resource's to the file for use by others.
 			file.data.md.resources = resources;
 			
 			// Using information from `resources` update the `file` properties.
-			if (resources.exists('date')) file.created = TzDate.fromFormat( resources.get('date').title );
+			if (resources.exists('date')) file.created = TzDate.fromFormat( '', resources.get('date').title, 0 );
+			if (resources.exists('modified')) file.modified = TzDate.fromFormat( '', resources.get('modified').title, 0 );
+			var template = resources.exists('template') ? resources.get('template').url : '';
+			var title = resources.exists('title') ? resources.get('title').title : '';
 			
-			var html = [for (token in tokens) parser.printHTML( token, resources )].join('');
+			// Turn the tokens into html.
+			var html = [for (token in tokens) parser.printHTML( token, resources )].join('\r\n');
 			
-			// Look for a template in the markdown `[_template]: /path/file.html`
-			var template = resources.exists('_template') ? resources.get('_template') : { url:'', title:'' };
-			var location = if (template.url == '') {
+			var location = if (template == '') {
 				'${tuli.config.input}/templates/_template.html'.normalize();
 			} else {
-				(file.path.directory() + '/${template.url}').normalize();
+				'${file.path.directory()}/${template}'.normalize();
 			}
 			
-			if (template.title == null || template.title == '') {
+			if (title == '') {
 				var token = tokens.filter(function(t) return switch (t.token) {
 					case Keyword(Header(_, _, _)): true;
 					case _: false;
 				})[0];
 				
 				if (token != null) {
-					template.title = switch (token.token) {
+					title = switch (token.token) {
 						case Keyword(Header(_, _, t)): 
 							parser.printString( token );
 							
@@ -91,25 +90,7 @@ class Markdown {
 				}
 			}
 			
-			var content = '';
-			var tuliFiles = tuli.config.files.filter( function(f) return [location].indexOf( f.path ) > -1 );
-			for (tuliFile in tuliFiles) tuliFile.ignore = true;
-			
-			if (!fileCache.exists( location )) {
-				// Grab the templates content.
-				if (tuli.config.files.exists( location )) {
-					content = tuli.config.files.get( location ).content;
-					fileCache.set( location, content );
-				} else {
-					var f = new File( location );
-					content = f.content;
-					tuli.config.files.push( f );
-					fileCache.set( location, content );
-				}
-			} else {
-				content = fileCache.get( location );
-			}
-			
+			var content = file.content;
 			var dom = content.parse();
 			
 			for (key in characters.keys()) html = html.replace( characters.get(key), key );
