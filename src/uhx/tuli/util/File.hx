@@ -54,7 +54,7 @@ class File {
 	private function get_created():TzDate {
 		if (created == null) {
 			if (path.exists()) {
-				created = path.stat().ctime;
+				created = new TzDate( path.stat().ctime );
 				
 			} else {
 				created = TzDate.now();
@@ -73,7 +73,7 @@ class File {
 	private function get_modified():TzDate {
 		if (modified == null) {
 			if (path.exists()) {
-				modified = path.stat().ctime;
+				modified = new TzDate( path.stat().mtime );
 				
 			} else {
 				modified = TzDate.now();
