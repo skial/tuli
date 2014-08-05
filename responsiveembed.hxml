@@ -11,6 +11,6 @@
 #-dce no
 -cp src
 
--neko frontpage.n
--main uhx.tuli.plugins.FrontPage
+-neko responsiveembed.n
+-main uhx.tuli.plugins.ResponsiveEmbed
 
