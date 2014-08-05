@@ -29,7 +29,7 @@ typedef TuliConfig = {
 	var input:String;
 	var output:String;
 	var ignore:Array<String>;
-	var extra:Dynamic;
+	var data:Dynamic;
 	var files:Array<File>;
 	var users:Array<TuliUser>;
 	var spawn:Array<Spawn>;
@@ -249,10 +249,10 @@ class Tuli {
 		for (file in config.files) file.spawned = [];
 		
 		// Build `config.data` from the data plugins.
-		for (cb in dataPluginsBefore) config.extra = cb(config.extra);
+		for (cb in dataPluginsBefore) config.data = cb(config.data);
 		
 		// Send all the files at once to each callback.
-		for (cb in allFilesBefore) config.files = cb( config.files );
+		for (cb in allFilesBefore) config.data = cb( config.data );
 		
 		// Send files to content plugins for modification.
 		var any = extPluginsBefore.get('*');
@@ -275,10 +275,10 @@ class Tuli {
 	
 	public function finish() {
 		// Build `config.data` from the data plugins.
-		for (cb in dataPluginsAfter) config.extra = cb(config.extra);
+		for (cb in dataPluginsAfter) config.data = cb(config.data);
 		
 		// Send all the files at once to each callback.
-		for (cb in allFilesAfter) config.files = cb( config.files );
+		for (cb in allFilesAfter) config.data = cb( config.data );
 		
 		// Send files to content plugins for modification if not in `fileCache`.
 		var any = extPluginsAfter.get('*');
@@ -312,7 +312,7 @@ class Tuli {
 		// Remove all `file.stats` fields from the config file.
 		var toRemove = [];
 		for (file in config.files) {
-			if (file.extra.github == null || file.extra.github.contributors == null) {
+			if (file.data.github == null || file.data.github.contributors == null) {
 				toRemove.push( file );
 			}
 		}
@@ -320,7 +320,7 @@ class Tuli {
 		
 		var toRemove = [];
 		for (file in config.spawn) {
-			if (file.extra.github == null || file.extra.github.contributors == null) {
+			if (file.data.github == null || file.data.github.contributors == null) {
 				toRemove.push( file );
 			}
 		}
