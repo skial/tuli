@@ -5,6 +5,7 @@
 -lib beanhx
 -lib tjson
 -lib selecthxml
+-lib geotools
 -debug
 #-dce no
 -cp src

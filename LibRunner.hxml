@@ -7,6 +7,9 @@
 -lib hxparse
 -lib selecthxml
 -lib tappi
+-lib geotools
 -cp src
 -neko run.n
+-D openfl
 -main LibRunner
+--remap flash:flash
