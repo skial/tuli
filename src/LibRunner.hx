@@ -61,10 +61,10 @@ class LibRunner implements Klas {
 	/**
 	 * Sets the location of your configuration file.
 	 * The default location is the current working directory with
-	 * the name of `config.json`.
+	 * the name of `_config.json`.
 	 */
 	@alias('f') 
-	public var file:String = 'config.json';
+	public var file:String = '_config.json';
 	
 	private var tuli:Tuli;
 	
