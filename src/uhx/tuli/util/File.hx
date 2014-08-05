@@ -13,9 +13,6 @@ using haxe.io.Path;
  */
 class File {
 	
-	public static var useGit:Bool = false;
-	
-	//public var size:Int;
 	public var ext:String;
 	public var name:String;
 	public var path:String;
@@ -55,19 +52,7 @@ class File {
 	
 	private function get_created():Date {
 		if (created == null) {
-			if (useGit) {
-				var process = new Process('git', ['log', '--pretty=format:%at', '--diff-filter=A', '--', path]);
-				var output = process.stdout.readAll().toString();
-				process.exitCode();
-				process.close();
-				
-				if (output.trim() != '') {
-					created = Date.fromTime( DateTools.seconds( Std.parseFloat( output ) ) );
-				} else {
-					created = path.stat().ctime;
-				}
-				
-			} else if (path.exists()) {
+			if (path.exists()) {
 				created = path.stat().ctime;
 				
 			} else {
@@ -86,19 +71,7 @@ class File {
 	
 	private function get_modified():Date {
 		if (modified == null) {
-			if (useGit) {
-				var process = new Process('git', ['log', '--pretty=format:%at', '--diff-filter=A', '--', path]);
-				var output = process.stdout.readAll().toString();
-				process.exitCode();
-				process.close();
-				
-				if (output.trim() != '') {
-					modified = Date.fromTime( DateTools.seconds( Std.parseFloat( output ) ) );
-				} else {
-					modified = path.stat().ctime;
-				}
-				
-			} else if (path.exists()) {
+			if (path.exists()) {
 				modified = path.stat().ctime;
 				
 			} else {
