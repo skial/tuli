@@ -16,7 +16,7 @@ class File {
 	public var ext:String;
 	public var name:String;
 	public var path:String;
-	public var extra:Dynamic = { };
+	public var data:Dynamic = { };
 	public var ignore:Bool = false;
 	public var fetched(get, null):Bool;
 	public var spawned:Array<String> = [];
