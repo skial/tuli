@@ -7,8 +7,8 @@
 -lib hxparse
 -lib selecthxml
 -lib tappi
--lib geotools
--cp src
+-lib cmd
+-lib geotools-cp src
 -neko run.n
 -D openfl
 -main LibRunner
