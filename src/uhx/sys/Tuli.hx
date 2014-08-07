@@ -326,10 +326,6 @@ class Tuli {
 		}
 		for (tr in toRemove) config.spawn.remove( tr );
 		
-		// Save the modified config file.
-		configFile.content = TJSON.encode(config, 'fancy');
-		configFile.save();
-		
 	}
 	
 	// Recursively create the directory in `config.output`.
