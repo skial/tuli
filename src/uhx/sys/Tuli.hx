@@ -106,6 +106,9 @@ class Tuli {
 				
 			}
 			
+			if (config.data == null) config.data = { };
+			if (config.data.plugins == null) config.data.plugins = { };
+			
 			if (config.plugins.length > 0) {
 				var libs = [];
 				
@@ -119,7 +122,11 @@ class Tuli {
 				
 				if (data.exists()) {
 					for (lib in libs) if ('$data/$lib.json'.normalize().exists()) {
-						pluginConfig.set( lib.toLowerCase(), Json.parse( new File( '$data/$lib.json'.normalize() ).content ) );
+						var json = Json.parse( new File( '$data/$lib.json'.normalize() ).content );
+						// Add the parsed json config to a map of `name=>json`.
+						pluginConfig.set( lib, json );
+						// Add the parsed json config eg `config.data.plugins.$name.$json`
+						config.data.plugins.setField( lib, json );
 					}
 				}
 				
@@ -130,7 +137,7 @@ class Tuli {
 				
 				for (id in tappi.libraries) if (tappi.classes.exists( id )) {
 					var cls:Class<Plugin> = cast tappi.classes.get( id );
-					instances.set( id, Type.createInstance( cls, [this, pluginConfig.exists( id.toLowerCase() ) ? pluginConfig.get( id.toLowerCase() ) : { } ] ));
+					instances.set( id, Type.createInstance( cls, [this, pluginConfig.exists( id ) ? pluginConfig.get( id ) : { } ] ));
 				}
 				
 			}
