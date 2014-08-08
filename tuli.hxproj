@@ -37,6 +37,7 @@
     <library name="hxparse" />
     <library name="mo" />
     <library name="tappi" />
+    <library name="geotools" />
   </haxelib>
   <!-- Class files to compile (other referenced classes will automatically be included) -->
   <compileTargets>
