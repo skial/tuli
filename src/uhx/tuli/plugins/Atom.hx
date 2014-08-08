@@ -19,10 +19,12 @@ class Atom {
 	private static var xmlCache:Map<String, DOMCollection> = new Map();
 	
 	public static function main() return Atom;
-	private static var tuli:Tuli;
+	private var tuli:Tuli;
+	private var config:Dynamic;
 	
-	public function new(t:Tuli) {
+	public function new(t:Tuli, c:Dynamic) {
 		tuli = t;
+		config = c;
 		
 		if (feed == null) feed = new File( '${tuli.config.input}/templates/_feed.atom'.normalize() );
 		if (entry == null) entry = new File( '${tuli.config.input}/templates/_entry.atom'.normalize() );
@@ -31,7 +33,7 @@ class Atom {
 	}
 	
 	public function handler(file:File) {
-		for (file in tuli.config.files.filter(function(f) {
+		for (file in tuli.files.filter(function(f) {
 			return ['_feed.atom', '_entry.atom'].indexOf(f.path) != -1;
 		} )) file.ignore = true;
 		
@@ -44,15 +46,15 @@ class Atom {
 		var xmlFeed = null;
 		
 		//if (tuli.fileCache.exists( path )) {
-		if (tuli.config.files.exists( path )) {
-			xmlFeed = tuli.config.files.get( path );
+		if (tuli.files.exists( path )) {
+			xmlFeed = tuli.files.get( path );
 			
 		} else {
 			xmlFeed = feed;
 			
 		}
 		
-		if (xmlFeed.content.indexOf(id) == -1 && tuli.config.files.exists( '${html}index.html' )) {
+		if (xmlFeed.content.indexOf(id) == -1 && tuli.files.exists( '${html}index.html' )) {
 			var dom = null;
 			var domFeed = null;
 			var domEntry = null;
@@ -61,7 +63,7 @@ class Atom {
 				dom = xmlCache.get( html + 'index.html' );
 				
 			} else {
-				dom = tuli.config.files.get( html + 'index.html' ).content.parse();
+				dom = tuli.files.get( html + 'index.html' ).content.parse();
 				
 			}
 			
