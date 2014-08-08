@@ -12,10 +12,12 @@ using Detox;
 class ImageGroup {
 
 	public static function main() return ImageGroup;
-	private static var tuli:Tuli;
+	private var tuli:Tuli;
+	private var config:Dynamic;
 	
-	public function new(t:Tuli) {
+	public function new(t:Tuli, c:Dynamic) {
 		tuli = t;
+		config = c;
 		tuli.onExtension('html', handler, After);
 	}
 	
