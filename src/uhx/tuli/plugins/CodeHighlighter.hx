@@ -16,8 +16,9 @@ class CodeHighlighter {
 	private var tuli:Tuli;
 	private var config:Dynamic;
 
-	public function new(t:Tuli, config:Dynamic) {
+	public function new(t:Tuli, c:Dynamic) {
 		tuli = t;
+		config = c;
 		tuli.onExtension('html', handler, After);
 	}
 	
