@@ -13,14 +13,14 @@ using Detox;
 class CodeHighlighter {
 	
 	public static function main() return CodeHighlighter;
-	private static var tuli:Tuli;
+	private var tuli:Tuli;
 
 	public function new(t:Tuli) {
 		tuli = t;
 		tuli.onExtension('html', handler, After);
 	}
 	
-	public function handler(file:File) {
+	public function handler(file:File, config:Dynamic) {
 		var dom = file.content.parse();
 		var blocks = dom.find( 'code' );
 		
