@@ -2,6 +2,7 @@ package uhx.sys;
 
 import Detox;
 import dtx.Tools;
+import haxe.ds.StringMap;
 import haxe.Json;
 import haxe.Timer;
 import uhx.Tappi;
@@ -39,7 +40,7 @@ enum State {
 }
 
 typedef Plugin = {
-	function new(tuli:Tuli):Void;
+	function new(tuli:Tuli, config:Dynamic):Void;
 	function build():Void;
 	function update():Void;
 	function clean():Void;
@@ -59,6 +60,8 @@ class Tuli {
 	
 	public var secrets:Dynamic;
 	private var secretFile:File;
+	
+	private var pluginConfig:StringMap<Dynamic> = new StringMap();
 	
 	private var allFilesBefore:Array<Array<File>->Array<File>> = [];
 	private var allFilesAfter:Array<Array<File>->Array<File>> = [];
@@ -112,6 +115,14 @@ class Tuli {
 					libs = libs.concat( (plugin.field( name ):Array<String>) );
 				}
 				
+				var data = '${config.input}/_data'.normalize();
+				
+				if (data.exists()) {
+					for (lib in libs) if ('$data/$lib.json'.normalize().exists()) {
+						pluginConfig.set( lib.toLowerCase(), Json.parse( new File( '$data/$lib.json'.normalize() ).content ) );
+					}
+				}
+				
 				var tappi = new Tappi(libs, true);
 				
 				tappi.find();
@@ -119,7 +130,7 @@ class Tuli {
 				
 				for (id in tappi.libraries) if (tappi.classes.exists( id )) {
 					var cls:Class<Plugin> = cast tappi.classes.get( id );
-					instances.set( id, Type.createInstance( cls, [this] ));
+					instances.set( id, Type.createInstance( cls, [this, pluginConfig.exists( id.toLowerCase() ) ? pluginConfig.get( id.toLowerCase() ) : { } ] ));
 				}
 				
 			}
