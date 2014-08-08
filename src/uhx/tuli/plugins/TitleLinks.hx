@@ -15,10 +15,12 @@ using sys.FileSystem;
 class TitleLinks {
 
 	public static function main() return TitleLinks;
-	private static var tuli:Tuli;
+	private var tuli:Tuli;
+	private var config:Dynamic;
 	
-	public function new(t:Tuli) {
+	public function new(t:Tuli, c:Dynamic) {
 		tuli = t;
+		config = c;
 		tuli.onExtension( 'html', handler, After );
 	}
 	
