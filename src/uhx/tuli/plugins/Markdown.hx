@@ -22,6 +22,7 @@ class Markdown {
 	
 	public static function main() return Markdown;
 	private var tuli:Tuli;
+	private var config:Dynamic;
 	
 	// I hate this, need to spend some time on UTF8 so I dont have to manually
 	// add international characters.
@@ -32,7 +33,7 @@ class Markdown {
 	'ö' => '&ouml;',
 	'“'=>'&ldquo;', '”'=>'&rdquo;' ];
 
-	public function new(t:Tuli) {
+	public function new(t:Tuli, c:Dynamic) {
 		tuli = t;
 		tuli.onExtension('md', handler, Before);
 	}
@@ -107,7 +108,7 @@ class Markdown {
 				spawn.created = file.created;
 				spawn.modified = file.modified;
 				
-				tuli.config.spawn.push( spawn );
+				tuli.spawn.push( spawn );
 			}
 			
 		}
