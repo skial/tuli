@@ -25,37 +25,20 @@ using haxe.io.Path;
 using uhx.sys.Tuli;
 using sys.FileSystem;
 
-typedef TuliConfig = {
+typedef Config = {
+	var data:Dynamic;
 	var input:String;
 	var output:String;
 	var ignore:Array<String>;
-	var extra:Dynamic;
-	var files:Array<File>;
-	var users:Array<TuliUser>;
-	var spawn:Array<Spawn>;
 	var plugins:Array<String>;
 }
 
-typedef TuliUser = {
-	var name:String;
-	var email:String;
-	var avatar_url:String;
-	var profiles:Array<TuliProfile>;
-	var isAuthor:Bool;
-	var isContributor:Bool;
-}
-
-typedef TuliProfile = {
-	var service:String;
-	var data:Dynamic;
-}
-
-enum TuliState {
+enum State {
 	Before;
 	After;
 }
 
-typedef TuliPlugin = {
+typedef Plugin = {
 	function new(tuli:Tuli):Void;
 	function build():Void;
 	function update():Void;
@@ -68,7 +51,10 @@ typedef TuliPlugin = {
  */
 class Tuli {
 	
-	public var config:TuliConfig;
+	public var files:Array<File> = [];
+	public var spawn:Array<File> = [];
+	
+	public var config:Config;
 	private var configFile:File;
 	
 	public var secrets:Dynamic;
@@ -86,8 +72,8 @@ class Tuli {
 	private var finishCallbacksBefore:Array<Void->Void> = [];
 	private var finishCallbacksAfter:Array<Void->Void> = [];
 	
-	private var classes:Map<String, Class<TuliPlugin>> = new Map();
-	private var instances:Map<String, TuliPlugin> = new Map();
+	private var classes:Map<String, Class<Plugin>> = new Map();
+	private var instances:Map<String, Plugin> = new Map();
 	
 	public function new(cf:File) {
 		if ( cf == null ) throw 'The configuration file can not be null.';
@@ -96,11 +82,6 @@ class Tuli {
 		config = Json.parse( configFile.content );
 		
 		if ( config != null ) {
-			
-			// Clear the list of generated files.
-			config.spawn = [];
-			
-			if (config.files == null) config.files = [];
 			
 			// If `output` is null set it to output provided to the compiler.
 			if (config.output != null) {
@@ -137,7 +118,7 @@ class Tuli {
 				tappi.load();
 				
 				for (id in tappi.libraries) if (tappi.classes.exists( id )) {
-					var cls:Class<TuliPlugin> = cast tappi.classes.get( id );
+					var cls:Class<Plugin> = cast tappi.classes.get( id );
 					instances.set( id, Type.createInstance( cls, [this] ));
 				}
 				
@@ -147,7 +128,7 @@ class Tuli {
 		
 	}
 	
-	public function onAllFiles(callback:Array<File>->Array<File>, ?when:TuliState):Void {
+	public function onAllFiles(callback:Array<File>->Array<File>, ?when:State):Void {
 		if (when == null) when = Before;
 		switch (when) {
 			case Before:
@@ -161,7 +142,7 @@ class Tuli {
 	
 	// Register a callback that is interested in a certain extension.
 	// This allows for multiply extensions to deal with the same file.
-	public function onExtension(extension:String, callback:File->Void, ?when:TuliState):Void {
+	public function onExtension(extension:String, callback:File->Void, ?when:State):Void {
 		if (when == null) when = Before;
 		switch (when) {
 			case Before:
@@ -183,7 +164,7 @@ class Tuli {
 	
 	// Register a callback that adds data to the global `config.data` object.
 	// This is currently not saved, so the data has to be recreated on each call.
-	public function onData(callback:Dynamic->Dynamic, ?when:TuliState):Void {
+	public function onData(callback:Dynamic->Dynamic, ?when:State):Void {
 		if (when == null) when = Before;
 		switch (when) {
 			case Before: dataPluginsBefore.push( callback );
@@ -191,7 +172,7 @@ class Tuli {
 		}
 	}
 	
-	public function onFinish(callback:Void->Void, ?when:TuliState):Void {
+	public function onFinish(callback:Void->Void, ?when:State):Void {
 		if (when == null) when = After;
 		switch (when) {
 			case After: finishCallbacksAfter.push( callback );
@@ -221,7 +202,7 @@ class Tuli {
 		allItems = new AlphabeticalSort().alphaSort( allItems );
 		
 		// Turn all paths into `File`.
-		config.files = config.files.concat( 
+		files = files.concat( 
 			[for (item in allItems) if (!'$path/$item'.isDirectory()) {
 				new File( '$path/$item'.normalize() );
 			}]
@@ -229,7 +210,7 @@ class Tuli {
 		
 		// Find all files and directories starting with `_` and set 
 		// `ignore = true` on the file.
-		for (file in config.files) {
+		for (file in files) {
 			if (file.name.startsWith('_')) {
 				file.ignore = true;
 				continue;
@@ -241,28 +222,28 @@ class Tuli {
 		
 		// Set any file matching `config.ignore` with its extension
 		// to be ignored.
-		for (file in config.files) if (config.ignore.indexOf( file.ext ) > -1) {
+		for (file in files) if (config.ignore.indexOf( file.ext ) > -1) {
 			file.ignore = true;
 		}
 		
 		// Clear the files `spawned` array.
-		for (file in config.files) file.spawned = [];
+		for (file in files) file.spawned = [];
 		
 		// Build `config.data` from the data plugins.
-		for (cb in dataPluginsBefore) config.extra = cb(config.extra);
+		for (cb in dataPluginsBefore) config.data = cb( config.data );
 		
 		// Send all the files at once to each callback.
-		for (cb in allFilesBefore) config.files = cb( config.files );
+		for (cb in allFilesBefore) files = cb( files );
 		
 		// Send files to content plugins for modification.
 		var any = extPluginsBefore.get('*');
 		for (extension in extPluginsBefore.keys()) {
 			var cbs = extPluginsBefore.get( extension );
-			var files = config.files.filter( function(s) return s.ext == extension );
+			var matches = files.filter( function(s) return s.ext == extension );
 			//var contents = files.map( function(s) return if (s.ext == 'html') loadHTML('$path/${s.path}') else '$path/${s.path}'.getContent() );
 			
-			if (any != null) for (file in files) for (a in any) a(file);
-			for (file in files) for (cb in cbs) cb(file);
+			if (any != null) for (file in matches) for (a in any) a( file );
+			for (file in matches) for (cb in cbs) cb( file );
 		}
 		
 		// Last chance to modify files before the
@@ -275,56 +256,39 @@ class Tuli {
 	
 	public function finish() {
 		// Build `config.data` from the data plugins.
-		for (cb in dataPluginsAfter) config.extra = cb(config.extra);
+		for (cb in dataPluginsAfter) config.data = cb( config.data );
 		
 		// Send all the files at once to each callback.
-		for (cb in allFilesAfter) config.files = cb( config.files );
+		for (cb in allFilesAfter) files = cb( files );
 		
 		// Send files to content plugins for modification if not in `fileCache`.
 		var any = extPluginsAfter.get('*');
 		for (extension in extPluginsAfter.keys()) {
 			var cbs = extPluginsAfter.get( extension );
-			var files = config.files.filter( function(s) return s.ext == extension );
+			var matches = files.filter( function(s) return s.ext == extension );
 			
-			if (any != null) for (file in files) for (a in any) a(file);
-			for (file in files) for (cb in cbs) cb( file );
+			if (any != null) for (file in matches) for (a in any) a( file );
+			for (file in matches) for (cb in cbs) cb( file );
 		}
 		
 		for (extension in extPluginsAfter.keys()) {
 			var cbs = extPluginsAfter.get( extension );
-			var files = config.spawn.filter( function(s) return s.ext == extension/* && fileCache.exists( s.path ) */);
+			var matches = spawn.filter( function(s) return s.ext == extension/* && fileCache.exists( s.path ) */);
 			
-			for (file in files) for (cb in cbs) cb( file );
+			for (file in matches) for (cb in cbs) cb( file );
 		}
 		
 		// Ignore extensions which have been added by plugins.
 		if (config.ignore != null && config.ignore.length > 0) {
-			config.files = config.files.filter( function(f) return config.ignore.indexOf( f.ext ) == -1 );
+			files = files.filter( function(f) return config.ignore.indexOf( f.ext ) == -1 );
 		}
 		
 		// Last chance to modify anything.
 		for (cb in finishCallbacksAfter) cb();
 		
 		// Lets save everything.
-		for (file in config.files) save( file );
-		for (file in config.spawn) save( file );
-		
-		// Remove all `file.stats` fields from the config file.
-		var toRemove = [];
-		for (file in config.files) {
-			if (file.extra.github == null || file.extra.github.contributors == null) {
-				toRemove.push( file );
-			}
-		}
-		for (tr in toRemove) config.files.remove( tr );
-		
-		var toRemove = [];
-		for (file in config.spawn) {
-			if (file.extra.github == null || file.extra.github.contributors == null) {
-				toRemove.push( file );
-			}
-		}
-		for (tr in toRemove) config.spawn.remove( tr );
+		for (file in files) save( file );
+		for (file in spawn) save( file );
 		
 	}
 	
