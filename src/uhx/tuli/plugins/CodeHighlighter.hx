@@ -14,13 +14,14 @@ class CodeHighlighter {
 	
 	public static function main() return CodeHighlighter;
 	private var tuli:Tuli;
+	private var config:Dynamic;
 
-	public function new(t:Tuli) {
+	public function new(t:Tuli, config:Dynamic) {
 		tuli = t;
 		tuli.onExtension('html', handler, After);
 	}
 	
-	public function handler(file:File, config:Dynamic) {
+	public function handler(file:File) {
 		var dom = file.content.parse();
 		var blocks = dom.find( 'code' );
 		
