@@ -24,7 +24,7 @@
 
 --next
 
--neko boxedimages.n
+-neko imageletterbox.n
 -main uhx.tuli.plugins.ImageLetterbox
 
 --next
