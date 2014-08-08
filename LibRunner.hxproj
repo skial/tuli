@@ -37,8 +37,8 @@
     <library name="hxparse" />
     <library name="selecthxml" />
     <library name="tappi" />
-    <library name="geotools" />
-  </haxelib>
+	<library name="cmd" />
+	<library name="geotools" />  </haxelib>
   <!-- Class files to compile (other referenced classes will automatically be included) -->
   <compileTargets>
     <compile path="src\Main.hx" />
