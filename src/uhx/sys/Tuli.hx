@@ -2,6 +2,7 @@ package uhx.sys;
 
 import Detox;
 import dtx.Tools;
+import geo.TzDate;
 import haxe.ds.StringMap;
 import haxe.Json;
 import haxe.Timer;
@@ -373,6 +374,16 @@ class Tuli {
 				return false;
 		}
 		
+	}
+	
+	public static function ordinalIndicator(day:Int):String {
+		// http://www.if-not-true-then-false.com/2010/php-1st-2nd-3rd-4th-5th-6th-php-add-ordinal-number-suffix/
+		return switch ([11, 12, 13].indexOf(day) == -1 ? day % 10 : -1) {
+			case 1: '${day}st';
+			case 2: '${day}nd';
+			case 3: '${day}rd';
+			case _: '${day}th';
+		};
 	}
 	
 }
