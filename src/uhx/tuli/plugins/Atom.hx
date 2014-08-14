@@ -1,130 +1,82 @@
 package uhx.tuli.plugins;
 
 import uhx.sys.Tuli;
+import uhx.tuli.util.File;
+import uhx.tuli.plugins.impl.t.Feed;
 
 using Detox;
 using StringTools;
 using haxe.io.Path;
 using sys.FileSystem;
-using uhx.tuli.util.File;
+using uhx.tuli.util.File.Util;
+
+private typedef Config = {
+	var feed:Null<String>;
+	var entry:Null<String>;
+}
 
 /**
  * ...
  * @author Skial Bainn
  */
 class Atom {
-
-	private static var feed:File;
-	private static var entry:File;
-	private static var xmlCache:Map<String, DOMCollection> = new Map();
 	
 	public static function main() return Atom;
-	private var tuli:Tuli;
-	private var config:Dynamic;
 	
-	public function new(t:Tuli, c:Dynamic) {
+	private var tuli:Tuli;
+	private var config:Config;
+	private var feed:File;
+	private var entry:File;
+	
+	public function new(t:Tuli, c:Config) {
 		tuli = t;
 		config = c;
 		
-		if (feed == null) feed = new File( '${tuli.config.input}/templates/_feed.atom'.normalize() );
-		if (entry == null) entry = new File( '${tuli.config.input}/templates/_entry.atom'.normalize() );
+		feed = new File( (c.feed == null ? '${tuli.config.input}/templates/_feed.atom' : '${tuli.config.input}/${c.feed}').normalize() );
+		entry = new File( (c.entry == null? '${tuli.config.input}/templates/_entry.atom' : '${tuli.config.input}/${c.entry}').normalize() );
 		
-		tuli.onExtension('md', handler, After);
+		tuli.onAllFiles(handler, After);
 	}
 	
-	public function handler(file:File) {
-		for (file in tuli.files.filter(function(f) {
-			return ['_feed.atom', '_entry.atom'].indexOf(f.path) != -1;
-		} )) file.ignore = true;
+	public function handler(files:Array<File>):Array<File> {
+		var config:Feed = tuli.config.data.feed;
+		var feedDom = feed.content.parse();
+		var entryDom = entry.content.parse();
+		var entryClone = null;
 		
-		var dir = file.path.directory();
-		if (dir == '') dir = 'articles';
-		var path = '$dir/atom.xml'.normalize();
-		var html = '${file.path.withoutExtension()}/'.normalize();
-		var id = 'http://haxe.io/$html';
+		if (config.type == null) config.type = Link;
 		
-		var xmlFeed = null;
-		
-		//if (tuli.fileCache.exists( path )) {
-		if (tuli.files.exists( path )) {
-			xmlFeed = tuli.files.get( path );
+		if (tuli.config.data.domain != null) for (file in files) if (file.ext == 'md' && file.spawned.length > 0) {
+			var spawns = file.spawned.map( function(f) {
+				return tuli.spawn.get( f );
+			} );
 			
-		} else {
-			xmlFeed = feed;
-			
+			for (spawn in spawns) {
+				var content = spawn.content.parse();
+				var uri = spawn.path.replace( tuli.config.output, tuli.config.data.domain ).normalize();
+				
+				entryClone = entryDom.clone();
+				entryClone.find( 'id' ).setText( uri );
+				entryClone.find( 'title' ).setText( content.find( 'title' ).text() );
+				entryClone.find( 'published' ).setText( spawn.created );
+				entryClone.find( 'updated' ).setText( spawn.modified );
+				
+				switch (config.type) {
+					case Full:
+						entryClone.find( 'content' ).setAttr( 'type', 'html' ).append( content.find( 'body' ) );
+						
+					case Summary:
+						
+						
+					case Link, _:
+						entryClone.find( 'content' ).setAttr( 'src', uri );
+						
+				}
+				
+			}
 		}
 		
-		if (xmlFeed.content.indexOf(id) == -1 && tuli.files.exists( '${html}index.html' )) {
-			var dom = null;
-			var domFeed = null;
-			var domEntry = null;
-			//trace( id );
-			if (xmlCache.exists( html + 'index.html' )) {
-				dom = xmlCache.get( html + 'index.html' );
-				
-			} else {
-				dom = tuli.files.get( html + 'index.html' ).content.parse();
-				
-			}
-			
-			if (xmlCache.exists( path )) {
-				domFeed = xmlCache.get( path );
-				
-			} else {
-				domFeed = xmlFeed.content.parse();
-				
-			}
-			
-			var title = dom.find('h1').first().text().trim();
-			
-			if (title != '') {
-				domEntry = entry.content.parse();
-				
-				domEntry.find('id').setText( id );
-				domEntry.find('title').setText( title );
-				domEntry.find('summary').setText( dom.find('p').first().text() );
-				domEntry.find('content').setAttr('src', id).setAttr('type','text/html');
-				domEntry.find('published').setText( tuli.asISO8601( file.created ) );
-				
-				domFeed.find('updated').setText( tuli.asISO8601( file.modified ) );
-				domEntry.find('updated').setText( tuli.asISO8601( file.modified ) );
-				
-				domFeed.find('link').setAttr('href', 'http://haxe.io/$path');
-				domFeed.first().next().append( null, domEntry );
-				// The following line causes a memory leak.
-				//domFeed.find('author').afterThisInsert( domEntry );
-				
-				xmlCache.set( path, domFeed );
-				
-				if (!xmlCache.exists( html + 'index.html' )) {
-					xmlCache.set( html + 'index.html', dom );
-				}
-				
-				var result = domFeed.html();
-				
-				while (result.indexOf('&amp;') > -1) {
-					result = result.replace('&amp;', '&');
-				}
-				
-				for (key in Markdown.characters.keys()) {
-					result = result.replace( Markdown.characters.get( key ), key );
-				}
-				
-				//Tuli.fileCache.set( path, result );
-				xmlFeed.content = result;
-				
-			}
-			
-			dom = null;
-			domFeed = null;
-			domEntry = null;
-		}
-		
-		dir = null;
-		html = null;
-		id = null;
-		path = null;
-		xmlFeed = null;
+		return files;
 	}
 	
 }
