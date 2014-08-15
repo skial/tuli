@@ -31,7 +31,8 @@ class Markdown {
 	'ê' => '&ecirc;', 'ä' => '&auml;',
 	'é' => '&eacute;', 'ø' => '&oslash;',
 	'ö' => '&ouml;',
-	'“'=>'&ldquo;', '”'=>'&rdquo;' ];
+	'“'=>'&ldquo;', '”'=>'&rdquo;',
+	'É' => '&Eacute;'];
 
 	public function new(t:Tuli) {
 		tuli = t;
