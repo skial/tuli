@@ -1,5 +1,6 @@
 package uhx.tuli.plugins;
 
+import geo.TzDate;
 import uhx.sys.Tuli;
 import uhx.tuli.util.File;
 import uhx.tuli.plugins.impl.t.Feed;
@@ -39,11 +40,13 @@ class Atom {
 	}
 	
 	public function handler(files:Array<File>):Array<File> {
+		var df = '%Y-%m-%dT%H:%M:%S%z';
 		var config:Feed = tuli.config.data.feed;
 		var feedDom = feed.content.parse();
 		var entryDom = entry.content.parse();
 		var entryClone = null;
 		
+		if (config == null) config == { };
 		if (config.type == null) config.type = Link;
 		
 		if (tuli.config.data.domain != null) for (file in files) if (file.ext == 'md' && file.spawned.length > 0) {
@@ -58,8 +61,8 @@ class Atom {
 				entryClone = entryDom.clone();
 				entryClone.find( 'id' ).setText( uri );
 				entryClone.find( 'title' ).setText( content.find( 'title' ).text() );
-				entryClone.find( 'published' ).setText( spawn.created );
-				entryClone.find( 'updated' ).setText( spawn.modified );
+				entryClone.find( 'published' ).setText( TzDate.formatAs( spawn.created, df ) );
+				entryClone.find( 'updated' ).setText( TzDate.formatAs( spawn.modified, df ) );
 				
 				switch (config.type) {
 					case Full:
