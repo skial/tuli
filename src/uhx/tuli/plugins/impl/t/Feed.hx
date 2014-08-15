@@ -8,5 +8,4 @@ import uhx.tuli.plugins.impl.a.FeedType;
  */
 typedef Feed = {
 	var type:Null<FeedType>;
-	var author:Null<String>;
 }
