@@ -2,6 +2,7 @@ package uhx.tuli.plugins;
 
 import geo.TzDate;
 import uhx.sys.Tuli;
+import uhx.tuli.plugins.impl.t.Details;
 import uhx.tuli.util.File;
 import uhx.tuli.plugins.impl.t.Feed;
 
@@ -57,19 +58,27 @@ class Atom {
 			for (spawn in spawns) {
 				var content = spawn.content.parse();
 				var uri = spawn.path.replace( tuli.config.output, tuli.config.data.domain ).normalize();
+				var details:Details = spawn.data;
 				
 				entryClone = entryDom.clone();
 				entryClone.find( 'id' ).setText( uri );
 				entryClone.find( 'title' ).setText( content.find( 'title' ).text() );
-				entryClone.find( 'published' ).setText( TzDate.formatAs( spawn.created, df ) );
-				entryClone.find( 'updated' ).setText( TzDate.formatAs( spawn.modified, df ) );
+				entryClone.find( 'published' ).setText( spawn.created.format( df ) );
+				entryClone.find( 'updated' ).setText( spawn.modified.format( df ) );
+				
+				if (tuli.config.data.author != null) {
+					entryClone.find( 'author name' ).setText( (tuli.config.data.author:String) );
+				}
 				
 				switch (config.type) {
 					case Full:
 						entryClone.find( 'content' ).setAttr( 'type', 'html' ).append( content.find( 'body' ) );
 						
-					case Summary:
+					case Summary if (details.summary != null):
+						entryClone.find( 'summary' ).setText( details.summary );
 						
+					case Summary if (details.summary == null):
+						entryClone.find( 'summary' ).remove();
 						
 					case Link, _:
 						entryClone.find( 'content' ).setAttr( 'src', uri );
