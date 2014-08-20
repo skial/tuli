@@ -2,9 +2,8 @@ package uhx.tuli.plugins;
 
 import geo.TzDate;
 import uhx.sys.Tuli;
-import uhx.tuli.plugins.impl.t.Details;
 import uhx.tuli.util.File;
-import uhx.tuli.plugins.impl.t.Feed;
+import uhx.tuli.plugins.impl.t.*;
 
 using Detox;
 using StringTools;
@@ -47,8 +46,10 @@ class Atom {
 		var entryDom = entry.content.parse();
 		var entryClone = null;
 		
-		if (config == null) config == { };
+		if (config == null) config = { type:null };
 		if (config.type == null) config.type = Link;
+		
+		if (tuli.config.data.domain != null) feedDom.find( 'id' ).setText( tuli.config.data.domain );
 		
 		if (tuli.config.data.domain != null) for (file in files) if (file.ext == 'md' && file.spawned.length > 0) {
 			var spawns = file.spawned.map( function(f) {
@@ -57,14 +58,15 @@ class Atom {
 			
 			for (spawn in spawns) {
 				var content = spawn.content.parse();
-				var uri = spawn.path.replace( tuli.config.output, tuli.config.data.domain ).normalize();
+				var uri = spawn.path.replace( tuli.config.output, (tuli.config.data.domain:String).addTrailingSlash() ).normalize();
 				var details:Details = spawn.data;
 				
 				entryClone = entryDom.clone();
 				entryClone.find( 'id' ).setText( uri );
-				entryClone.find( 'title' ).setText( content.find( 'title' ).text() );
+				entryClone.find( 'title' ).setText( details.title );
 				entryClone.find( 'published' ).setText( spawn.created.format( df ) );
 				entryClone.find( 'updated' ).setText( spawn.modified.format( df ) );
+				feedDom.find( 'feed > updated' ).setText( spawn.modified.format( df ) );
 				
 				if (tuli.config.data.author != null) {
 					entryClone.find( 'author name' ).setText( (tuli.config.data.author:String) );
@@ -73,6 +75,7 @@ class Atom {
 				switch (config.type) {
 					case Full:
 						entryClone.find( 'content' ).setAttr( 'type', 'html' ).append( content.find( 'body' ) );
+						entryClone.find( 'summary' ).remove();
 						
 					case Summary if (details.summary != null):
 						entryClone.find( 'summary' ).setText( details.summary );
@@ -82,11 +85,18 @@ class Atom {
 						
 					case Link, _:
 						entryClone.find( 'content' ).setAttr( 'src', uri );
+						entryClone.find( 'summary' ).remove();
 						
 				}
 				
+				feedDom.find( 'feed > author' ).afterThisInsert( null, entryClone );
+				
 			}
 		}
+		
+		var atom = new File( '${tuli.config.output}/atom.xml'.normalize() );
+		atom.content = feedDom.html();
+		files.push( atom );
 		
 		return files;
 	}
