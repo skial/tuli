@@ -110,6 +110,20 @@ class Atom {
 					entryClone.find( 'entry > author' ).remove();
 				}
 				
+				if (details.contributors != null && details.contributors.length > 0) {
+					var contributorDom = entryClone.find( 'entry > contributor' );
+					
+					for (contributor in details.contributors) {
+						var contributorClone = contributorDom.clone();
+						contributorClone.find( 'name' ).setText( contributor );
+						entryClone.find( 'entry > contributor' ).last().afterThisInsert( null, contributorClone );
+					}
+					
+					contributorDom.remove();
+				} else {
+					entryClone.find( 'entry > contributor' ).remove();
+				}
+				
 				switch (config.type) {
 					case Full:
 						entryClone.find( 'content' ).setAttr( 'type', 'html' ).append( content.find( 'body' ) );
