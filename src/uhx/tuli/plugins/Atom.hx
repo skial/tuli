@@ -41,6 +41,7 @@ class Atom {
 	
 	public function handler(files:Array<File>):Array<File> {
 		var df = '%Y-%m-%dT%H:%M:%S%z';
+		var site:Site = tuli.config.data.site;
 		var config:Feed = tuli.config.data.feed;
 		var feedDom = feed.content.parse();
 		var entryDom = entry.content.parse();
@@ -49,16 +50,28 @@ class Atom {
 		if (config == null) config = { type:null };
 		if (config.type == null) config.type = Link;
 		
-		if (tuli.config.data.domain != null) feedDom.find( 'id' ).setText( tuli.config.data.domain );
+		if (site.title != null) feedDom.find( 'title' ).setText( site.title );
+		if (site.domain != null) feedDom.find( 'id' ).setText( site.domain );
+		if (site.authors != null && site.authors.length > 0) {
+			var authorDom = feedDom.find( 'feed > author' );
+			
+			for (author in site.authors) {
+				var authorClone = authorDom.clone();
+				authorClone.find( 'name' ).setText( author );
+				feedDom.find( 'feed > author' ).last().afterThisInsert( null, authorClone );
+			}
+			
+			authorDom.remove();
+		}
 		
-		if (tuli.config.data.domain != null) for (file in files) if (file.ext == 'md' && file.spawned.length > 0) {
+		if (site.domain != null) for (file in files) if (file.ext == 'md' && file.spawned.length > 0) {
 			var spawns = file.spawned.map( function(f) {
 				return tuli.spawn.get( f );
 			} );
 			
 			for (spawn in spawns) {
 				var content = spawn.content.parse();
-				var uri = spawn.path.replace( tuli.config.output, (tuli.config.data.domain:String).addTrailingSlash() ).normalize();
+				var uri = spawn.path.replace( tuli.config.output, site.domain.addTrailingSlash() ).normalize();
 				var details:Details = spawn.data;
 				
 				entryClone = entryDom.clone();
@@ -68,8 +81,18 @@ class Atom {
 				entryClone.find( 'updated' ).setText( spawn.modified.format( df ) );
 				feedDom.find( 'feed > updated' ).setText( spawn.modified.format( df ) );
 				
-				if (tuli.config.data.author != null) {
-					entryClone.find( 'author name' ).setText( (tuli.config.data.author:String) );
+				if (details.authors != null && details.authors.length > 0) {
+					var authorDom = entryClone.find( 'entry > author' );
+					
+					for (author in details.authors) {
+						var authorClone = authorDom.clone();
+						authorClone.find( 'name' ).setText( author );
+						entryClone.find( 'entry > author' ).last().afterThisInsert( null, authorClone );
+					}
+					
+					authorDom.remove();
+				} else {
+					entryClone.find( 'entry > author' ).remove();
 				}
 				
 				switch (config.type) {
@@ -89,7 +112,7 @@ class Atom {
 						
 				}
 				
-				feedDom.find( 'feed > author' ).afterThisInsert( null, entryClone );
+				feedDom.find( 'feed > author' ).last().afterThisInsert( null, entryClone );
 				
 			}
 		}
