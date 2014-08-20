@@ -10,9 +10,9 @@ typedef Details = {
 	var summary:Null<String>;
 	var template:Null<String>;
 	
-	var tags:Array<String>;
-	var categories:Array<String>;
+	var tags:Null<Array<String>>;
+	var categories:Null<Array<String>>;
 	
-	var authors:Array<String>;
-	var contributors:Array<String>;
+	var authors:Null<Array<String>>;
+	var contributors:Null<Array<String>>;
 }
