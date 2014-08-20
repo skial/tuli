@@ -52,29 +52,9 @@ class Atom {
 		
 		if (site.title != null) feedDom.find( 'title' ).setText( site.title );
 		if (site.domain != null) feedDom.find( 'id' ).setText( site.domain );
-		if (site.authors != null && site.authors.length > 0) {
-			var authorDom = feedDom.find( 'feed > author' );
-			
-			for (author in site.authors) {
-				var authorClone = authorDom.clone();
-				authorClone.find( 'name' ).setText( author );
-				feedDom.find( 'feed > author' ).last().afterThisInsert( null, authorClone );
-			}
-			
-			authorDom.remove();
-		}
 		
-		if (site.contributors != null && site.contributors.length > 0) {
-			var contributorDom = feedDom.find( 'feed > contributor' );
-			
-			for (contributor in site.contributors) {
-				var contributorClone = contributorDom.clone();
-				contributorClone.find( 'name' ).setText( contributor );
-				feedDom.find( 'feed > contributor' ).last().afterThisInsert( null, contributorClone );
-			}
-			
-			contributorDom.remove();
-		}
+		loop(site.authors, feedDom, 'feed > author');
+		loop(site.contributors, feedDom, 'feed > contributor');
 		
 		feedDom.find( 'feed > link' ).setAttr( 'rel', 'self' ).setAttr( 'href', '${site.domain}/atom.xml'.normalize() );
 		
@@ -96,33 +76,8 @@ class Atom {
 				entryClone.find( 'updated' ).setText( spawn.modified.format( df ) );
 				feedDom.find( 'feed > updated' ).setText( spawn.modified.format( df ) );
 				
-				if (details.authors != null && details.authors.length > 0) {
-					var authorDom = entryClone.find( 'entry > author' );
-					
-					for (author in details.authors) {
-						var authorClone = authorDom.clone();
-						authorClone.find( 'name' ).setText( author );
-						entryClone.find( 'entry > author' ).last().afterThisInsert( null, authorClone );
-					}
-					
-					authorDom.remove();
-				} else {
-					entryClone.find( 'entry > author' ).remove();
-				}
-				
-				if (details.contributors != null && details.contributors.length > 0) {
-					var contributorDom = entryClone.find( 'entry > contributor' );
-					
-					for (contributor in details.contributors) {
-						var contributorClone = contributorDom.clone();
-						contributorClone.find( 'name' ).setText( contributor );
-						entryClone.find( 'entry > contributor' ).last().afterThisInsert( null, contributorClone );
-					}
-					
-					contributorDom.remove();
-				} else {
-					entryClone.find( 'entry > contributor' ).remove();
-				}
+				loop(details.authors, entryClone, 'entry > author');
+				loop(details.contributors, entryClone, 'entry > contributor');
 				
 				switch (config.type) {
 					case Full:
@@ -152,5 +107,23 @@ class Atom {
 		
 		return files;
 	}
+	
+	private function loop(people:Array<String>, parent:DOMCollection, css:String):Void {
+		if (people != null) {
+			var dom = parent.find( css );
+			
+			for (person in people) {
+				var clone = dom.clone();
+				clone.find( 'name' ).setText( person );
+				parent.find( css ).last().afterThisInsert( null, clone );
+			}
+			
+			dom.remove();
+		} else {
+			parent.find( css ).remove();
+		}
+	}
+	
+	
 	
 }
