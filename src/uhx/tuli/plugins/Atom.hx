@@ -40,7 +40,7 @@ class Atom {
 	}
 	
 	public function handler(files:Array<File>):Array<File> {
-		var df = '%Y-%m-%dT%H:%M:%S%z';
+		var df = '%Y-%m-%dT%H:%M:%SZ%z';
 		var site:Site = tuli.config.data.site;
 		var config:Feed = tuli.config.data.feed;
 		var feedDom = feed.content.parse();
@@ -64,6 +64,20 @@ class Atom {
 			authorDom.remove();
 		}
 		
+		if (site.contributors != null && site.contributors.length > 0) {
+			var contributorDom = feedDom.find( 'feed > contributor' );
+			
+			for (contributor in site.contributors) {
+				var contributorClone = contributorDom.clone();
+				contributorClone.find( 'name' ).setText( contributor );
+				feedDom.find( 'feed > contributor' ).last().afterThisInsert( null, contributorClone );
+			}
+			
+			contributorDom.remove();
+		}
+		
+		feedDom.find( 'feed > link' ).setAttr( 'rel', 'self' ).setAttr( 'href', '${site.domain}/atom.xml'.normalize() );
+		
 		if (site.domain != null) for (file in files) if (file.ext == 'md' && file.spawned.length > 0) {
 			var spawns = file.spawned.map( function(f) {
 				return tuli.spawn.get( f );
@@ -75,7 +89,8 @@ class Atom {
 				var details:Details = spawn.data;
 				
 				entryClone = entryDom.clone();
-				entryClone.find( 'id' ).setText( uri );
+				// See http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
+				entryClone.find( 'id' ).setText( 'tag:${site.domain},${spawn.created.format("%Y-%m-%d")}' );
 				entryClone.find( 'title' ).setText( details.title );
 				entryClone.find( 'published' ).setText( spawn.created.format( df ) );
 				entryClone.find( 'updated' ).setText( spawn.modified.format( df ) );
@@ -112,7 +127,7 @@ class Atom {
 						
 				}
 				
-				feedDom.find( 'feed > author' ).last().afterThisInsert( null, entryClone );
+				feedDom.find( 'feed > contributor' ).last().afterThisInsert( null, entryClone );
 				
 			}
 		}
