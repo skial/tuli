@@ -70,7 +70,7 @@ class Atom {
 				
 				entryClone = entryDom.clone();
 				// See http://web.archive.org/web/20110514113830/http://diveintomark.org/archives/2004/05/28/howto-atom-id
-				entryClone.find( 'id' ).setText( 'tag:${site.domain},${spawn.created.format("%Y-%m-%d")}' );
+				entryClone.find( 'id' ).setText( 'tag:${site.domain.replace("https://","").replace("http://","")},${spawn.created.format("%Y-%m-%d")}' );
 				entryClone.find( 'title' ).setText( details.title );
 				entryClone.find( 'published' ).setText( spawn.created.format( df ) );
 				entryClone.find( 'updated' ).setText( spawn.modified.format( df ) );
