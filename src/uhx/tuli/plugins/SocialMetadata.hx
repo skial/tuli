@@ -68,6 +68,12 @@ class SocialMetadata {
 			var alt = dom.find('img[alt*="social"]');
 			var cardType = 'summary';
 			
+			// Get the card type if it exists already
+			if (dom.find('meta[name="twitter:card"]').length > 0) {
+				var type = dom.find('meta[name="twitter:card"]').attr('content').trim();
+				if (type != '') cardType = type;
+			}
+			
 			var images = [];
 			for (id in ['property', 'name']) {
 				for (meta in dom.find('meta[$id*="image"]')) {
@@ -91,7 +97,7 @@ class SocialMetadata {
 			var url = dom.find('meta[property="og:url"]');
 			
 			if (url.length > 0) {
-				var path = 'http://haxe.io/${file.name}'.normalize();
+				var path = 'http://haxe.io/${file.path.replace(tuli.config.output, "").replace(" ", "-")}'.normalize();
 				if (path.endsWith('index.html')) path = path.directory().addTrailingSlash();
 				url.setAttr('content', path);
 			}
