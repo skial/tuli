@@ -5,7 +5,6 @@
 -lib beanhx
 -lib tjson
 -lib selecthxml
--lib imagemagick
 -lib tappi
 -debug
 #-dce no
@@ -46,20 +45,20 @@
 -cs bin/cs/rss/
 -main uhx.tuli.plugins.RSS
 
---next
+#--next
 
--cs bin/cs/socialmetadata/
--main uhx.tuli.plugins.SocialMetadata
+#-cs bin/cs/socialmetadata/
+#-main uhx.tuli.plugins.SocialMetadata
 
 --next
 
 -cs bin/cs/titlelinks/
 -main uhx.tuli.plugins.TitleLinks
 
---next
+#--next
 
--cs bin/cs/imagemeta/
--main uhx.tuli.plugins.ImageMeta
+#-cs bin/cs/imagemeta/
+#-main uhx.tuli.plugins.ImageMeta
 
 #--next
 
