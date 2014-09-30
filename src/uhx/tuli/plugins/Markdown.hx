@@ -68,13 +68,13 @@ class Markdown {
 			}
 			
 			if (template.title == null || template.title == '') {
-				var token = tokens.filter(function(t) return switch (t.token) {
+				var token = tokens.filter(function(t) return switch (t) {
 					case Keyword(Header(_, _, _)): true;
 					case _: false;
 				})[0];
 				
 				if (token != null) {
-					template.title = switch (token.token) {
+					template.title = switch (token) {
 						case Keyword(Header(_, _, t)): 
 							parser.printString( token );
 							
