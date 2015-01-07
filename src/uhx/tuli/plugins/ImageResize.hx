@@ -31,11 +31,11 @@ class ImageResize {
 		var parser = new CssParser();
 		var tokens = parser.toTokens( ByteData.ofString( file.content ), 'ImageResize-css' );
 		var mediaQueries = tokens.filter( function(t) {
-			return t.token.match(Keyword(AtRule(_, _, _)));
+			return t.match(Keyword(AtRule(_, _, _)));
 		} );
 		
 		for (mq in mediaQueries) {
-			switch( mq.token ) {
+			switch( mq ) {
 				case Keyword(AtRule(n, q, t)):
 					trace(n, q);
 					
