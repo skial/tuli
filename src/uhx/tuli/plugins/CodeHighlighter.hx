@@ -1,27 +1,64 @@
 package uhx.tuli.plugins;
 
-import uhx.sys.Tuli;
+import sys.io.File;
+import haxe.io.Eof;
+import uhx.sys.Ioe;
+import haxe.io.Input;
 import byte.ByteData;
-import uhx.tuli.util.File;
 
 using Detox;
+using StringTools;
 
 /**
  * ...
  * @author Skial Bainn
  */
-class CodeHighlighter {
+@:cmd
+@:usage('highlight [options]')
+class CodeHighlighter extends Ioe implements Klas {
 	
-	public static function main() return CodeHighlighter;
-	private static var tuli:Tuli;
+	@alias('i')
+	public var input:String;
+	
+	@alias('o')
+	public var output:String;
+	
+	@alias('d')
+	public var directory:String;
+	
+	@alias('a')
+	public var auto:Bool = false;
+	
+	public static function main() {
+		var high = new CodeHighlighter( Sys.args() );
+		high.exit();
+	}
 
-	public function new(t:Tuli) {
-		tuli = t;
-		tuli.onExtension('html', handler, After);
+	public function new(args:Array<String>) {
+		process();
 	}
 	
-	public function handler(file:File) {
-		var dom = file.content.parse();
+	public function process() {
+		if (input != null) stdin = File.read( input );
+		if (output != null) stdout = File.read( output );
+		
+		var code = -1;
+		var content = '';
+		
+		try while (code != eofChar) {
+			code = stdin.readByte();
+			if (byte != eofChar) content += String.fromCharCode( code );
+			
+		} catch (e:Eof) {
+			
+		} catch (e:Dynamic) {
+			stderr.writeString( '$e' );
+			
+		}
+		
+		content = content.trim();
+		
+		var dom = content.parse();
 		var blocks = dom.find( 'code' );
 		
 		for (code in blocks) {
