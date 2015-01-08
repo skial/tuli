@@ -30,6 +30,7 @@ class Markdown extends Ioe implements Klas {
 	
 	public static function main() {
 		var md = new Markdown( Sys.args() );
+		md.exit();
 	}
 	
 	@alias('f')
@@ -71,10 +72,12 @@ class Markdown extends Ioe implements Klas {
 		try while (byte != eofChar) {
 			byte = stdin.readByte();
 			if (byte != eofChar) content += String.fromCharCode( byte );
+			
 		} catch (e:Eof) { 
 			
 		} catch (e:Dynamic) { 
 			stderr.writeString( '$e' );
+			
 		}
 		
 		content = content.trim();
@@ -82,6 +85,7 @@ class Markdown extends Ioe implements Klas {
 			// On windows, text entered on the command line with `""` are included, remove them.
 			if (content.startsWith('"')) content = content.substring(1);
 			if (content.endsWith('"')) content = content.substr(0, content.length - 1);
+			
 		}
 		
 		for (key in characters.keys()) content = content.replace(key, characters.get(key));
@@ -113,11 +117,17 @@ class Markdown extends Ioe implements Klas {
 		
 		stdout.writeString( result );
 		
+		byte = null;
+		parser = null;
+		tokens = null;
+		result = null;
+		content = null;
+		resources = null;
+		
 		stdin.close();
 		stdout.close();
 		
 		exitCode = ExitCode.SUCCESS;
-		exit();
 	}
 	
 }
