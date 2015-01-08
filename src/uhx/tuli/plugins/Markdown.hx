@@ -65,13 +65,23 @@ class Markdown extends Ioe implements Klas {
 			stdout = File.write( output );
 		}
 		
+		var byte = -1;
 		var content = '';
-		try {
-			content += stdin.readUntil( eofChar );
+		// For manually or piped text into `stdin` read each byte, one at a time.
+		try while (byte != eofChar) {
+			byte = stdin.readByte();
+			if (byte != eofChar) content += String.fromCharCode( byte );
 		} catch (e:Eof) { 
 			
 		} catch (e:Dynamic) { 
 			stderr.writeString( '$e' );
+		}
+		
+		content = content.trim();
+		if (input == null) {
+			// On windows, text entered on the command line with "" are included, remove them.
+			if (content.startsWith('"')) content = content.substring(1);
+			if (content.endsWith('"')) content = content.substr(0, content.length - 1);
 		}
 		
 		for (key in characters.keys()) content = content.replace(key, characters.get(key));
