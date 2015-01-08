@@ -58,20 +58,15 @@ class Markdown extends Ioe implements Klas {
 	}
 	
 	private function process() {
-		if (input != null) {
-			stdin = File.read( input );
-		}
+		if (input != null) stdin = File.read( input );
+		if (output != null) stdout = File.write( output );
 		
-		if (output != null) {
-			stdout = File.write( output );
-		}
-		
-		var byte = -1;
+		var code = -1;
 		var content = '';
 		// For manually or piped text into `stdin` read each byte, one at a time.
-		try while (byte != eofChar) {
-			byte = stdin.readByte();
-			if (byte != eofChar) content += String.fromCharCode( byte );
+		try while (code != eofChar) {
+			code = stdin.readByte();
+			if (code != eofChar) content += String.fromCharCode( code );
 			
 		} catch (e:Eof) { 
 			
@@ -117,7 +112,7 @@ class Markdown extends Ioe implements Klas {
 		
 		stdout.writeString( result );
 		
-		byte = null;
+		code = null;
 		parser = null;
 		tokens = null;
 		result = null;
