@@ -1,62 +1,70 @@
 package uhx.tuli.plugins;
 
-import uhx.sys.Tuli;
+import uhx.sys.Ioe;
+import sys.io.File;
+import sys.io.FileInput;
+import uhx.sys.ExitCode;
 
 using Detox;
 using StringTools;
 using haxe.io.Path;
 using sys.FileSystem;
-using uhx.tuli.util.File;
 
 /**
  * ...
  * @author Skial Bainn
  */
-class Atom {
+@:cmd
+@:allow( Markdown )
+@:usage('atom [options]')
+class Atom extends Ioe implements Klas {
 
-	private static var feed:File;
-	private static var entry:File;
+	@alias('i')
+	public var input:String;
+	
+	@alias('o')
+	public var output:String;
+	
+	private static var feed:FileInput;
+	private static var entry:FileInput;
 	private static var xmlCache:Map<String, DOMCollection> = new Map();
 	
-	public static function main() return Atom;
-	private static var tuli:Tuli;
-	
-	public function new(t:Tuli) {
-		tuli = t;
-		
-		if (feed == null) feed = new File( '${tuli.config.input}/templates/_feed.atom'.normalize() );
-		if (entry == null) entry = new File( '${tuli.config.input}/templates/_entry.atom'.normalize() );
-		
-		tuli.onExtension('md', handler, After);
+	public static function main() {
+		var atom = new Atom( Sys.args() );
+		atom.exit();
 	}
 	
-	public function handler(file:File) {
-		for (file in tuli.config.files.filter(function(f) {
-			return ['_feed.atom', '_entry.atom'].indexOf(f.path) != -1;
-		} )) file.ignore = true;
-		
-		var dir = file.path.directory();
-		if (dir == '') dir = 'articles';
-		var path = '$dir/atom.xml'.normalize();
-		var html = '${file.path.withoutExtension()}/'.normalize();
-		var id = 'http://haxe.io/$html';
-		
-		var xmlFeed = null;
-		
-		//if (tuli.fileCache.exists( path )) {
-		if (tuli.config.files.exists( path )) {
-			xmlFeed = tuli.config.files.get( path );
-			
-		} else {
-			xmlFeed = feed;
-			
+	public function new(args:Array<String>) {
+		if (feed == null) feed = File.read( '/templates/_feed.atom'.normalize() );
+		if (entry == null) entry = File.read( '/templates/_entry.atom'.normalize() );
+		process();
+	}
+	
+	public function process() {
+		if (input == null) {
+			stderr.writeString( 'You must specify an input directory.' );
+			exitCode = ExitCode.ERRORS;
 		}
 		
-		if (xmlFeed.content.indexOf(id) == -1 && tuli.config.files.exists( '${html}index.html' )) {
+		if (output == null) {
+			stderr.writeString( 'You must specify an output directory.' );
+			exitCode = ExitCode.ERRORS;
+		}
+		
+		if (exitCode == ExitCode.ERRORS) exit();
+		
+		var dir = input;
+		var path = '$dir/atom.xml'.normalize();
+		var html = '$input/'.normalize();
+		var id = 'http://haxe.io/$html';
+		
+		var files = ''.readDirectory().map( function(p) return p.normalize() );
+		var xmlFeed = feed.readAll().toString();
+		if (xmlFeed.indexOf(id) == -1 && files.exists( '${html}index.html' )) {
 			var dom = null;
 			var domFeed = null;
 			var domEntry = null;
-			//trace( id );
+			
 			if (xmlCache.exists( html + 'index.html' )) {
 				dom = xmlCache.get( html + 'index.html' );
 				
