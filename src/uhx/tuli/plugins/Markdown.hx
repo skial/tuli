@@ -53,10 +53,10 @@ class Markdown extends Ioe implements Klas {
 
 	public function new(args:Array<String>) {
 		super();
-		handler();
+		process();
 	}
 	
-	private function handler() {
+	private function process() {
 		if (input != null) {
 			stdin = File.read( input );
 		}
@@ -79,7 +79,7 @@ class Markdown extends Ioe implements Klas {
 		
 		content = content.trim();
 		if (input == null) {
-			// On windows, text entered on the command line with "" are included, remove them.
+			// On windows, text entered on the command line with `""` are included, remove them.
 			if (content.startsWith('"')) content = content.substring(1);
 			if (content.endsWith('"')) content = content.substr(0, content.length - 1);
 		}
@@ -112,6 +112,9 @@ class Markdown extends Ioe implements Klas {
 		}
 		
 		stdout.writeString( result );
+		
+		stdin.close();
+		stdout.close();
 		
 		exitCode = ExitCode.SUCCESS;
 		exit();
