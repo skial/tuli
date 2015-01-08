@@ -6,9 +6,11 @@
 -lib tjson
 -lib selecthxml
 -lib imagemagick
+-lib cmd
 -debug
 #-dce no
 -cp src
+#-D dump
 
 -neko markdown.n
 -main uhx.tuli.plugins.Markdown
