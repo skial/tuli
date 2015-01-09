@@ -1,12 +1,14 @@
 package uhx.tuli.plugins;
 
 import dtx.Tools;
-import haxe.io.Eof;
 import haxe.Json;
+import haxe.io.Eof;
+import uhx.sys.Ioe;
 import sys.io.File;
 import tjson.TJSON;
-import uhx.sys.Ioe;
 import byte.ByteData;
+import haxe.io.Input;
+import haxe.io.Output;
 import uhx.sys.ExitCode;
 import uhx.lexer.MarkdownParser;
 
@@ -25,7 +27,11 @@ using sys.FileSystem;
  * @author Skial Bainn
  */
 @:cmd
-@:usage( 'markdown [options]' )
+@:usage( 
+	'markdown [options]',
+	'markdown -i /src/package/Main.hx -o /bin/package/Main.html',
+	'markdown -i /src/package/Main.hx -o /bin/data/Main.json -f json'
+)
 class Markdown extends Ioe implements Klas {
 	
 	public static function main() {
@@ -57,25 +63,12 @@ class Markdown extends Ioe implements Klas {
 		process();
 	}
 	
-	private function process() {
-		if (input != null) stdin = File.read( input );
-		if (output != null) stdout = File.write( output );
+	override private function process(?i:Input, ?o:Output) {
+		super.process(
+			input == null ? null : (File.read( input ):Input), 
+			output == null ? null : (File.write( output ):Output)
+		);
 		
-		var code = -1;
-		var content = '';
-		// For manually or piped text into `stdin` read each byte, one at a time.
-		try while (code != eofChar) {
-			code = stdin.readByte();
-			if (code != eofChar) content += String.fromCharCode( code );
-			
-		} catch (e:Eof) { 
-			
-		} catch (e:Dynamic) { 
-			stderr.writeString( '$e' );
-			
-		}
-		
-		content = content.trim();
 		if (input == null) {
 			// On windows, text entered on the command line with `""` are included, remove them.
 			if (content.startsWith('"')) content = content.substring(1);
@@ -112,15 +105,10 @@ class Markdown extends Ioe implements Klas {
 		
 		stdout.writeString( result );
 		
-		code = null;
 		parser = null;
 		tokens = null;
 		result = null;
-		content = null;
 		resources = null;
-		
-		stdin.close();
-		stdout.close();
 		
 		exitCode = ExitCode.SUCCESS;
 	}
