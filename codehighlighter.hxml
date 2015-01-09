@@ -7,9 +7,13 @@
 -lib selecthxml
 -lib imagemagick
 -lib cmd
+-lib format
 -debug
 #-dce no
 -cp src
+
+-resource themes/css.flat16.css@css.flat16.css
+-resource themes/haxe.flat16.css@haxe.flat16.css
 
 -neko codehighlighter.n
 -main uhx.tuli.plugins.CodeHighlighter
