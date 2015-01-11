@@ -60,6 +60,7 @@ class Markdown extends Ioe implements Klas {
 
 	public function new(args:Array<String>) {
 		super();
+		@:cmd _;
 		process();
 	}
 	
