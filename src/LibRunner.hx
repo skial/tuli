@@ -85,7 +85,7 @@ class LibRunner implements Klas {
 		Sys.setCwd( directory );
 		
 		if (file.exists()) {
-			tuli = new Tuli( new uhx.tuli.util.File( file ) );
+			tuli = new Tuli( file );
 			
 		} else {
 			Sys.println( 'A configuration file could not be found in $directory, please use -f <path> to set one.' );
@@ -157,16 +157,15 @@ class LibRunner implements Klas {
 	}
 	
 	private function runClean() {
-		FileSystem.deleteDirectory( tuli.config.output );
-		FileSystem.createDirectory( tuli.config.output );
+		
 	}
 	
 	private function runBuild() {
-		tuli.start();
+		
 	}
 	
 	private function runUpdate() {
-		tuli.start();
+		
 	}
 	
 	private function serve() {
