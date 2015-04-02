@@ -1,5 +1,6 @@
 package uhx.sys;
 
+import haxe.ds.ArraySort;
 import haxe.io.Input;
 import haxe.io.Output;
 import haxe.Json;
@@ -20,26 +21,36 @@ using sys.FileSystem;
 
 private class BIO {
 	
-	public var input:Input;
-	public var output:Output;
+	public var stdin:Output;
+	public var stdout:Input;
+	public var stderr:Input;
 	private var bytes:Bytes;
 	
-	public function new(bytes:Bytes, ?input:Input, ?output:Output) {
+	public function new(bytes:Bytes, ?stdin:Output, ?stdout:Input, ?stderr:Input) {
 		this.bytes = bytes;
-		this.input = input == null ? new BytesInput(this.bytes) : input;
-		this.output = output == null ? new BytesOutput() : output;
+		this.stdin = stdin == null ? new BytesOutput() : stdin;
+		this.stdout = stdout == null ? new BytesInput(this.bytes) : stdout;
+		this.stderr = stderr == null ? new BytesInput(this.bytes) : stderr;
+	}
+	
+	public function close():Void {
+		stdin.close();
+		stdout.close();
+		stderr.close();
+		bytes = null;
 	}
 	
 }
 
 @:enum private abstract Action(Int) from Int to Int {
-	public var PIPELINE = 0;
-	public var REDIRECT_INPUT = 1;
-	public var REDIRECT_OUTPUT = 2;
-	public var APPEND = 3;
-	public var REDIRECT_STDIN = 4;
-	public var REDIRECT_STDOUT = 5;
-	public var REDIRECT_STDERR = 6;
+	public var PIPELINE = 0;			//	|
+	public var REDIRECT_INPUT = 1;		//	<
+	public var REDIRECT_OUTPUT = 2;		//	>
+	public var APPEND = 3;				//	>>
+	public var REDIRECT_STDIN = 4;		//	0>
+	public var REDIRECT_STDOUT = 5;		//	1>
+	public var REDIRECT_STDERR = 6;		//	2>
+	public var NONE = 7;				//	No action
 }
 
 /**
@@ -121,34 +132,29 @@ class Tuli {
 		
 		for (id in eregMap.keys()) {
 			var ereg = eregMap.get( id );
-			var matches = allFiles.filter( function(path) return ereg.match( path ) );
-			
 			var content:DynamicAccess<Array<String>> = config.get( id );
 			
 			// Make sure `#` and `cmd` are at the front.
-			var keys = ['#', 'cmd'].concat( [for (k in content.keys()) k].filter( function(k) return ['#', 'cmd'].indexOf( k ) == -1 ) );
+			var defaults = ['#', 'cmd'].filter( function(d) return content.exists(d) );
+			var keys = defaults.concat( [for (k in content.keys()) k].filter( function(k) return defaults.indexOf( k ) == -1 ) );
 			
-			for (matched in matches) {
-				var info = matched.stat();
-				var input = matched.read();
-				var bytes = new BIO( Bytes.alloc( info.size ), input );
-				
+			for (file in allFiles) if (ereg.match( file )) {
 				for (key in keys) switch (key) {
 					case '#':
 						for (value in content.get( key )) {
-							memoryMap.set( '$id$key', bytes );
+							memoryMap.set( '$id$key', new BIO( Bytes.alloc( file.stat().size ) ) );
 						}
 						
 					case 'cmd':
-						for (value in content.get( key )) if (ereg.match( matched )) {
-							trace( value, actions( substitution( value, ereg ) ) );
+						for (value in content.get( key )) {
+							run( actions( substitution( value, ereg ) ) );
+							
 						}
 						
 					case _:
-						
+						continue;
 						
 				}
-				break;
 				
 			}
 			
@@ -231,29 +237,34 @@ class Tuli {
 	private function actions(value:String):Array<{action:Action, command:String}> {
 		var i = -1;
 		var code = -1;
+		var action = Action.NONE;
 		var command = '';
 		var results = [];
 		
 		while (i++ < value.length) switch (code = value.fastCodeAt(i)) {
 			case '|'.code:
-				results.push( { action:Action.PIPELINE, command:command.trim() } );
+				results.push( { action:action, command:command.trim() } );
+				action = Action.PIPELINE;
 				command = '';
 				
 			case '<'.code:
-				results.push( { action:Action.REDIRECT_INPUT, command:command.trim() } );
+				results.push( { action:action, command:command.trim() } );
+				action = Action.REDIRECT_INPUT;
 				command = '';
 				
 			case '>'.code:
-				results.push( { action:Action.REDIRECT_OUTPUT, command:command.trim() } );
+				results.push( { action:action, command:command.trim() } );
+				action = Action.REDIRECT_OUTPUT;
 				command = '';
 				
 			case x if (x >= '0'.code && x <= '2'.code && value.fastCodeAt(i+1) == '>'.code):
-				results.push( { action:switch(x) {
+				results.push( { action:action, command:command.trim() } );
+				action = switch(x) {
 					case 0: Action.REDIRECT_STDIN;
 					case 1: Action.REDIRECT_STDOUT;
 					case 2: Action.REDIRECT_STDERR;
 					case _: -1;
-				}, command:command.trim() } );
+				};
 				command = '';
 				
 			case _:
@@ -261,9 +272,88 @@ class Tuli {
 				
 		}
 		
-		if (command != '') results.push( { action: -1, command:command.trim() } );
+		if (command != '') results.push( { action:action, command:command.trim() } );
 		
-		return results;
+		/**
+		 * `cat < C:/path/to/File.md > C:/path/to/Output.md`
+		 * results = [
+		 * 		{command:'cat', action:Action.NONE},
+		 * 		{command:'C:/path/to/File.md', action:Action.REDIRECT_INPUT},
+		 * 		{command:'C:/path/to/Output.md', action:Action.REDURECT_OUTPUT},
+		 * ]
+		 * ------
+		 * Needs to convert to:
+		 * results = [
+		 * 		{command:'C:/path/to/File.md', action:Action.NONE},
+		 * 		{command:'cat', action:Action.REDIRECT_OUTPUT},
+		 * 		{command:'C:/path/to/Output.md', action:Action.REDIRECT_OUTPUT},
+		 * ]
+		 * -----
+		 * As I ignore the action value from now on.
+		 */
+		//trace( results );
+		for (i in 0...results.length) {
+			if (results[i] != null && results[i].action == Action.REDIRECT_INPUT) {
+				results[i].action = Action.NONE;
+				results.insert(i - 1, results[i]);
+				results[i + 1] = null;
+				
+			}
+			
+			
+		}
+		//trace( results );
+		return results.filter( function(f) return f != null );
+	}
+	
+	private function run(actions:Array<{action:Action,command:String}>):Void {
+		var previous:Process = null;
+		var collection:Array<Process> = [];
+		
+		var index:Int = 0;
+		var current:Process = null;
+		var parts:Array<String> = [];
+		
+		for (action in actions) {
+			trace( action );
+			switch (action.action) {
+				case Action.NONE if (action.command.isAbsolute() && action.command.exists()):
+					trace( 'creating file read : ${action.command}' );
+					index = collection.push( current = cast {
+						stdin:null,
+						stdout:File.read( action.command ),
+						stderr:null,
+						close:function() untyped __this__.stdout.close(),
+					} ) -1;
+					
+				case Action.PIPELINE | Action.REDIRECT_OUTPUT if (action.command.isAbsolute()):
+					trace( 'creating file write : ${action.command}' );
+					index = collection.push( current = cast {
+						stdin:File.write( action.command ),
+						stdout:null,
+						stderr:null,
+						close:function() untyped __this__.stdin.close(),
+					} ) -1;
+					
+				case _:
+					trace( 'creating process : ${action.command}' );
+					parts = action.command.split(' ');
+					index = collection.push( current = new Process(parts.shift(), parts) ) - 1;
+					
+			}
+			
+		}
+		
+		var length = collection.length - 1;
+		for (i in 0...collection.length) if (i + 1 <= length) {
+			var current = collection[i];
+			var next = collection[i + 1];
+			next.stdin.writeInput( current.stdout );
+			next.stdin.close();
+		}
+		
+		for (item in collection) try item.close() catch (e:Dynamic) { };
+		
 	}
 	
 	/**
