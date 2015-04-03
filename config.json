@@ -1,0 +1,29 @@
+{
+	"environment":[
+		{ "API_KEY":"abc123" },
+		{ "API_SECRET":"123abc" }
+	],
+	"variables":[
+		{ "in":"./src/" },
+		{ "out":"./bin/" },
+		{ "path":"[a-zA-Z0-9~/:]+" }
+	],
+	"(${path}/roundups/[0-9]/${path}).md$":{
+		"#":["_temp"],
+		"cmd":[
+			"cat $0 | #{_temp} | marked | ${out}/$1/index.html"
+		]
+	},
+	"${path}${in}(${path}).hx$":{
+		"#":["_temp"],
+		"_cmd":[
+			"$0 > ${out}/$1\\.hx"
+		]
+	},
+	"(${path}README).md$":{
+		"cmd":[
+			"cat $0 | $1\\2.md",
+			"cat < $0 > $1\\3.md"
+		]
+	}
+}
