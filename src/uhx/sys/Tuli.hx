@@ -61,6 +61,7 @@ class Tuli {
 	
 	public var config:DynamicAccess<Dynamic>;
 	
+	private var defines:Array<String>;
 	private var variables:StringMap<String>;
 	private var environment:StringMap<String>;
 	private var userEnvironment:StringMap<String>;
@@ -73,6 +74,7 @@ class Tuli {
 	public function new(cf:String) {
 		if ( cf == null ) throw 'The configuration file can not be null.';
 		
+		defines = [];
 		eregMap = new StringMap();
 		variables = new StringMap();
 		memoryMap = new StringMap();
@@ -83,6 +85,9 @@ class Tuli {
 		var values:DynamicAccess<Dynamic>;
 		
 		for (key in config.keys()) switch(key) {
+			case 'define':
+				defines = defines.concat( (config.get( key ):Array<String>) );
+				
 			case 'environment', 'env':
 				values = config.get( key );
 				
@@ -127,7 +132,7 @@ class Tuli {
 				eregMap.set( key, new EReg(key, '') );
 				
 		}
-		
+		trace( defines );
 		allFiles = recurse( '${Sys.getCwd()}/${variables.exists("input") ? variables.get("input") : ""}/'.normalize() );
 		
 		for (id in eregMap.keys()) {

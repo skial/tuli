@@ -1,4 +1,7 @@
 {
+	"define":[
+		"neko", "haxe", "command"
+	],
 	"env":{
 		"API_KEY":"abc123",
 		"API_SECRET":"123abc"
