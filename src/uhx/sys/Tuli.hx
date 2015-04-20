@@ -80,15 +80,15 @@ class Tuli {
 		userEnvironment = new StringMap();
 		config = Json.parse( cf.getContent() );
 		
-		var pairs:Array<Dynamic> = [];
+		var values:DynamicAccess<Dynamic>;
 		
 		for (key in config.keys()) switch(key) {
-			case 'environment':
-				pairs = config.get( key );
+			case 'environment', 'env':
+				values = config.get( key );
 				
-				for (pair in pairs) {
-					var name = pair.fields()[0];
-					var value = pair.field( name );
+				for (key in values.keys()) {
+					var name = key;
+					var value = values.get( key );
 					
 					if (value != null && !environment.exists( name )) {
 						Sys.putEnv( name, value );
@@ -100,12 +100,12 @@ class Tuli {
 					
 				}
 				
-			case 'variables':
-				pairs = config.get( key );
+			case 'variables', 'var':
+				values = config.get( key );
 				
-				for (pair in pairs) {
-					var name = pair.fields()[0];
-					var value = pair.field( name );
+				for (key in values.keys()) {
+					var name = key;
+					var value = values.get( key );
 					
 					if (value != null && !variables.exists( name )) variables.set( name, value );
 					
@@ -117,7 +117,7 @@ class Tuli {
 		}
 		
 		for (key in config.keys()) switch(key) {
-			case 'variables', 'environment':
+			case 'variables', 'environment', 'var', 'env':
 				// Skip these.
 				
 			case _ if (key.indexOf("${") > -1):
@@ -140,12 +140,12 @@ class Tuli {
 			
 			for (file in allFiles) if (ereg.match( file )) {
 				for (key in keys) switch (key) {
-					case '#':
+					case 'memory', 'mem':
 						for (value in content.get( key )) {
 							memoryMap.set( '$id$key', new BIO( Bytes.alloc( file.stat().size ) ) );
 						}
 						
-					case 'cmd':
+					case 'commands', 'cmd':
 						for (value in content.get( key )) {
 							run( actions( substitution( value, ereg ) ) );
 							
@@ -291,7 +291,6 @@ class Tuli {
 		 * -----
 		 * As I ignore the action value from now on.
 		 */
-		//trace( results );
 		for (i in 0...results.length) {
 			if (results[i] != null && results[i].action == Action.REDIRECT_INPUT) {
 				results[i].action = Action.NONE;
@@ -302,7 +301,7 @@ class Tuli {
 			
 			
 		}
-		//trace( results );
+		
 		return results.filter( function(f) return f != null );
 	}
 	
