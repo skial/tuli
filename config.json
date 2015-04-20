@@ -1,13 +1,13 @@
 {
-	"environment":[
-		{ "API_KEY":"abc123" },
-		{ "API_SECRET":"123abc" }
-	],
-	"variables":[
-		{ "in":"./src/" },
-		{ "out":"./bin/" },
-		{ "path":"[a-zA-Z0-9~/:]+" }
-	],
+	"env":{
+		"API_KEY":"abc123",
+		"API_SECRET":"123abc"
+	},
+	"var":{
+		"in":"./src/",
+		"out":"./bin/",
+		"path":"[a-zA-Z0-9~/:]+"
+	},
 	"(${path}/roundups/[0-9]/${path}).md$":{
 		"#":["_temp"],
 		"cmd":[
@@ -15,7 +15,7 @@
 		]
 	},
 	"${path}${in}(${path}).hx$":{
-		"#":["_temp"],
+		"mem":["_temp"],
 		"_cmd":[
 			"$0 > ${out}/$1\\.hx"
 		]
