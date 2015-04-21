@@ -170,8 +170,10 @@ class Tuli {
 		
 	}
 	
-	// Replace `${name}` with a matching value from `variables` or `environment`.
-	// Replace `$0` with whatever is returned by the `ereg` regular expression.
+	/**
+	 * Replace `${name}` with a matching value from `variables` or `environment`.
+	 * Replace `$0` with whatever is returned by the `ereg` regular expression.
+	 */
 	private function substitution(value:String, ?ereg:EReg):String {
 		var i = -1;
 		var result = '';
@@ -313,96 +315,6 @@ class Tuli {
 		return results.filter( function(f) return f != null );
 	}
 	
-	private function bypass(a:Bool):Bool {
-		return a;
-	}
-	
-	private function and(a:Bool, b:Bool):Bool {
-		return a && b;
-	}
-	
-	private function or(a:Bool, b:Bool):Bool {
-		return a || b;
-	}
-	
-	private function conditional(object:DynamicAccess<Dynamic>):Array<Dynamic> {
-		var results:Array<Dynamic> = [];
-		
-		for (key in object.keys()) {
-			var index = -1;
-			var value = '';
-			var result:Bool->Bool = bypass;
-			
-			while (index++ < key.length) switch(key.fastCodeAt(index)) {
-				case '&'.code if (key.fastCodeAt(index + 1) == '&'.code):
-					// Ignore the second `&`.
-					index += 1;
-					result = and.bind( result( toBoolean(value) ), _ );
-					
-				case '|'.code if (key.fastCodeAt(index + 1) == '|'.code):
-					// Ignore the second `|`.
-					index += 1;
-					result = or.bind( result( toBoolean(value) ), _ );
-					
-				case _:
-					var next = nextBinop( key.substring(index) );
-					value = key.substring(index, index + next).trim();
-					index += next;
-					
-			}
-			
-			if (result( toBoolean( value ) )) {
-				results.push( object.get( key ) );
-				
-			}
-			
-		}
-		
-		return results;
-	}
-	
-	/**
-	 * Converts `value` into a boolean based on its
-	 * existence in `defines`.
-	 */
-	private function toBoolean(value:String):Bool {
-		var index = -1;
-		var bool = true;
-		var name = '';
-		
-		while (index++ < value.length) switch (value.fastCodeAt(index)) {
-			case '!'.code if (value.fastCodeAt(index + 1) > ' '.code):
-				bool = !bool;
-				
-			case ' '.code:
-				
-			case _:
-				name += value.charAt(index);
-				
-		}
-		
-		return bool ? defines.indexOf( name ) > -1 : defines.indexOf( name ) == -1;
-	}
-	
-	/**
-	 * Find the next `&&` or `||` binop and return its `index-1`.
-	 */
-	private function nextBinop(value:String):Int {
-		var index = -1;
-		var result = value.length;
-		
-		while (index++ < value.length) switch(value.fastCodeAt(index)) {
-			case x if (['|'.code, '&'.code].indexOf(x) > -1 && value.fastCodeAt(index + 1) == x):
-				result = index-1;
-				break;
-				
-			case _:
-				
-		}
-		
-		return result;
-	}
-	
 	private function run(actions:Array<{action:Action,command:String}>):Void {
 		var previous:Process = null;
 		var collection:Array<Process> = [];
@@ -451,6 +363,97 @@ class Tuli {
 		
 		for (item in collection) try item.close() catch (e:Dynamic) { };
 		
+	}
+	
+	private function bypass(a:Bool):Bool {
+		return a;
+	}
+	
+	private function and(a:Bool, b:Bool):Bool {
+		return a && b;
+	}
+	
+	private function or(a:Bool, b:Bool):Bool {
+		return a || b;
+	}
+	
+	/**
+	 * Converts `value` into a boolean based on its
+	 * existence in `defines`.
+	 */
+	private function toBoolean(value:String):Bool {
+		var index = -1;
+		var bool = true;
+		var name = '';
+		
+		while (index++ < value.length) switch (value.fastCodeAt(index)) {
+			case '!'.code if (value.fastCodeAt(index + 1) > ' '.code):
+				bool = !bool;
+				
+			case ' '.code:
+				
+			case _:
+				name += value.charAt(index);
+				
+		}
+		
+		return bool ? defines.indexOf( name ) > -1 : defines.indexOf( name ) == -1;
+	}
+	
+	/**
+	 * Find the next `&&` or `||` binop and return its `index-1`.
+	 */
+	private function nextBinop(value:String):Int {
+		var index = -1;
+		var result = value.length;
+		
+		while (index++ < value.length) switch(value.fastCodeAt(index)) {
+			case x if (['|'.code, '&'.code].indexOf(x) > -1 && value.fastCodeAt(index + 1) == x):
+				result = index-1;
+				break;
+				
+			case _:
+				
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * Return an array containing objects whos `key` evaluates to `true`.
+	 */
+	private function conditional(object:DynamicAccess<Dynamic>):Array<Dynamic> {
+		var results:Array<Dynamic> = [];
+		
+		for (key in object.keys()) {
+			var index = -1;
+			var value = '';
+			var result:Bool->Bool = bypass;
+			
+			while (index++ < key.length) switch(key.fastCodeAt(index)) {
+				case '&'.code if (key.fastCodeAt(index + 1) == '&'.code):
+					index += 1;
+					result = and.bind( result( toBoolean(value) ), _ );
+					
+				case '|'.code if (key.fastCodeAt(index + 1) == '|'.code):
+					index += 1;
+					result = or.bind( result( toBoolean(value) ), _ );
+					
+				case _:
+					var nextPos = nextBinop( key.substring(index) );
+					value = key.substring(index, index + nextPos).trim();
+					index += nextPos;
+					
+			}
+			
+			if (result( toBoolean( value ) )) {
+				results.push( object.get( key ) );
+				
+			}
+			
+		}
+		
+		return results;
 	}
 	
 	/**
