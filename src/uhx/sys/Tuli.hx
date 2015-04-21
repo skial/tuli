@@ -125,7 +125,7 @@ class Tuli {
 		}
 		
 		for (key in config.keys()) switch(key) {
-			case 'variables', 'environment', 'var', 'env', 'if':
+			case 'variables', 'environment', 'var', 'env', 'if', 'define':
 				// Skip these.
 				
 			case _ if (key.indexOf("${") > -1):
@@ -313,6 +313,17 @@ class Tuli {
 		return results.filter( function(f) return f != null );
 	}
 	
+	private function bypass(a:Bool):Bool {
+		return a;
+	}
+	
+	private function and(a:Bool, b:Bool):Bool {
+		return a && b;
+	}
+	
+	private function or(a:Bool, b:Bool):Bool {
+		return a || b;
+	}
 	
 	private function conditional(object:DynamicAccess<Dynamic>):Array<Dynamic> {
 		var results:Array<Dynamic> = [];
@@ -320,17 +331,18 @@ class Tuli {
 		for (key in object.keys()) {
 			var index = -1;
 			var value = '';
-			var result:Null<Bool> = null;
+			var result:Bool->Bool = bypass;
 			
 			while (index++ < key.length) switch(key.fastCodeAt(index)) {
 				case '&'.code if (key.fastCodeAt(index + 1) == '&'.code):
 					// Ignore the second `&`.
 					index += 1;
-					result = result != null ? result && toBoolean( value ) : toBoolean( value );
+					result = and.bind( result( toBoolean(value) ), _ );
 					
 				case '|'.code if (key.fastCodeAt(index + 1) == '|'.code):
 					// Ignore the second `|`.
 					index += 1;
+					result = or.bind( result( toBoolean(value) ), _ );
 					
 				case _:
 					var next = nextBinop( key.substring(index) );
@@ -339,9 +351,7 @@ class Tuli {
 					
 			}
 			
-			result = result == null ? toBoolean( value ) : result;
-			
-			if (result) {
+			if (result( toBoolean( value ) )) {
 				results.push( object.get( key ) );
 				
 			}

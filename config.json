@@ -1,6 +1,6 @@
 {
 	"define":[
-		"native"
+		"native", "mobile"
 	],
 	"env":{
 		"API_KEY":"abc123",
@@ -12,11 +12,15 @@
 				"thread_count":8
 			}
 		},
-		"native && native":{
-			
+		"native || mobile":{
+			"env":{
+				"name":"bob"
+			}
 		},
 		"!native":{
-			
+			"env":{
+				"thread_count":2
+			}
 		}
 	},
 	"var":{
