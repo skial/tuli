@@ -82,47 +82,7 @@ class Tuli {
 		userEnvironment = new StringMap();
 		config = Json.parse( cf.getContent() );
 		
-		var values:DynamicAccess<Dynamic>;
-		
-		for (key in config.keys()) switch(key) {
-			case 'define':
-				defines = defines.concat( (config.get( key ):Array<String>) );
-				
-			case 'environment', 'env':
-				values = config.get( key );
-				
-				for (key in values.keys()) {
-					var name = key;
-					var value = values.get( key );
-					
-					if (value != null && !environment.exists( name )) {
-						Sys.putEnv( name, value );
-						
-						environment.set( name, value );
-						userEnvironment.set( name, value );
-						
-					}
-					
-				}
-				
-			case 'variables', 'var':
-				values = config.get( key );
-				
-				for (key in values.keys()) {
-					var name = key;
-					var value = values.get( key );
-					
-					if (value != null && !variables.exists( name )) variables.set( name, value );
-					
-				}
-				
-			case 'if':
-				trace( conditional( config.get( key ) ) );
-				
-			case _:
-				// Ignore for now, need to setup `environment` and `variables`.
-				
-		}
+		setupTopLevel( config );
 		
 		for (key in config.keys()) switch(key) {
 			case 'variables', 'environment', 'var', 'env', 'if', 'define':
@@ -168,6 +128,57 @@ class Tuli {
 			
 		}
 		
+	}
+	
+	/**
+	 * Sets up `define`, `environment`, `variables` and any
+	 * toplevel `if` statements.
+	 */
+	private function setupTopLevel(config:DynamicAccess<Dynamic>):Void {
+		var values:DynamicAccess<Dynamic>;
+		
+		for (key in config.keys()) switch(key) {
+			case 'define':
+				defines = defines.concat( (config.get( key ):Array<String>) );
+				
+			case 'environment', 'env':
+				values = config.get( key );
+				
+				for (key in values.keys()) {
+					var name = key;
+					var value = '' + values.get( key );
+					
+					if (value != null && !environment.exists( name )) {
+						Sys.putEnv( name, value );
+						
+						environment.set( name, value );
+						userEnvironment.set( name, value );
+						
+					}
+					
+				}
+				
+			case 'variables', 'var':
+				values = config.get( key );
+				
+				for (key in values.keys()) {
+					var name = key;
+					var value = values.get( key );
+					
+					if (value != null && !variables.exists( name )) variables.set( name, value );
+					
+				}
+				
+			case 'if':
+				for (config in conditional( config.get( key ) )) {
+					setupTopLevel( config );
+					
+				}
+				
+			case _:
+				// Ignore for now, need to setup `environment` and `variables`.
+				
+		}
 	}
 	
 	/**
