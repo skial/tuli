@@ -4,7 +4,12 @@
 	],
 	"env":{
 		"API_KEY":"abc123",
-		"API_SECRET":"123abc"
+		"API_SECRET":"123abc",
+		"if":{
+			"native":{
+				"cpu":"amd"
+			}
+		}
 	},
 	"if":{
 		"native":{
@@ -26,10 +31,15 @@
 	"var":{
 		"in":"./src/",
 		"out":"./bin/",
-		"path":"[a-zA-Z0-9~/:]+"
+		"path":"[a-zA-Z0-9~/:]+",
+		"if":{
+			"native":{
+				"name":"skial"
+			}
+		}
 	},
 	"(${path}/roundups/[0-9]/${path}).md$":{
-		"#":["_temp"],
+		"mem":["_temp"],
 		"cmd":[
 			"cat $0 | #{_temp} | marked | ${out}/$1/index.html"
 		]

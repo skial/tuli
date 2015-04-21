@@ -67,7 +67,6 @@ class Tuli {
 	private var userEnvironment:StringMap<String>;
 	
 	private var eregMap:StringMap<EReg>;
-	private var memoryMap:StringMap<BIO>;
 	
 	public var allFiles:Array<String>;
 	
@@ -77,24 +76,12 @@ class Tuli {
 		defines = [];
 		eregMap = new StringMap();
 		variables = new StringMap();
-		memoryMap = new StringMap();
 		environment = Sys.environment();
 		userEnvironment = new StringMap();
 		config = Json.parse( cf.getContent() );
 		
 		setupTopLevel( config );
-		
-		for (key in config.keys()) switch(key) {
-			case 'variables', 'environment', 'var', 'env', 'if', 'define':
-				// Skip these.
-				
-			case _ if (key.indexOf("${") > -1):
-				eregMap.set( key, new EReg( substitution( key ), '' ) );
-				
-			case _:
-				eregMap.set( key, new EReg(key, '') );
-				
-		}
+		setupERegMap( config );
 		
 		allFiles = recurse( '${Sys.getCwd()}/${variables.exists("input") ? variables.get("input") : ""}/'.normalize() );
 		
@@ -102,15 +89,18 @@ class Tuli {
 			var ereg = eregMap.get( id );
 			var content:DynamicAccess<Array<String>> = config.get( id );
 			
-			// Make sure `#` and `cmd` are at the front.
-			var defaults = ['#', 'cmd'].filter( function(d) return content.exists(d) );
+			var commands:Array<String> = [];
+			var memory:StringMap<BIO> = new StringMap();
+			
+			// Make sure `memory` and `commands` or their short forms are at the front.
+			var defaults = ['mem', 'cmd', 'memory', 'commands'].filter( function(d) return content.exists(d) );
 			var keys = defaults.concat( [for (k in content.keys()) k].filter( function(k) return defaults.indexOf( k ) == -1 ) );
 			
 			for (file in allFiles) if (ereg.match( file )) {
 				for (key in keys) switch (key) {
 					case 'memory', 'mem':
 						for (value in content.get( key )) {
-							memoryMap.set( '$id$key', new BIO( Bytes.alloc( file.stat().size ) ) );
+							memory.set( '$id$key', new BIO( Bytes.alloc( file.stat().size ) ) );
 						}
 						
 					case 'commands', 'cmd':
@@ -135,48 +125,82 @@ class Tuli {
 	 * toplevel `if` statements.
 	 */
 	private function setupTopLevel(config:DynamicAccess<Dynamic>):Void {
-		var values:DynamicAccess<Dynamic>;
-		
 		for (key in config.keys()) switch(key) {
 			case 'define':
 				defines = defines.concat( (config.get( key ):Array<String>) );
 				
 			case 'environment', 'env':
-				values = config.get( key );
-				
-				for (key in values.keys()) {
-					var name = key;
-					var value = '' + values.get( key );
-					
-					if (value != null && !environment.exists( name )) {
-						Sys.putEnv( name, value );
-						
-						environment.set( name, value );
-						userEnvironment.set( name, value );
-						
-					}
-					
-				}
+				setupEnvironment( config.get( key ) );
 				
 			case 'variables', 'var':
-				values = config.get( key );
-				
-				for (key in values.keys()) {
-					var name = key;
-					var value = values.get( key );
-					
-					if (value != null && !variables.exists( name )) variables.set( name, value );
-					
-				}
+				setupVariables( config.get( key ) );
 				
 			case 'if':
 				for (config in conditional( config.get( key ) )) {
 					setupTopLevel( config );
+					setupERegMap( config );
 					
 				}
 				
 			case _:
 				// Ignore for now, need to setup `environment` and `variables`.
+				
+		}
+	}
+	
+	private function setupVariables(config:DynamicAccess<Dynamic>):Void {
+		var value = null;
+		
+		for (key in config.keys()) switch (key) {
+			case 'if':
+				for (config in conditional( config.get( key ) )) {
+					setupVariables( config );
+					
+				}
+				
+			case _:
+				value = config.get( key );
+				trace( key, value );
+				if (value != null && !variables.exists( key )) variables.set( key, value );
+			
+		}
+	}
+	
+	private function setupEnvironment(config:DynamicAccess<Dynamic>):Void {
+		var value = null;
+		
+		for (key in config.keys()) switch (key) {
+			case 'if':
+				for (config in conditional( config.get( key ) )) {
+					setupEnvironment( config );
+					
+				}
+				
+			case _:
+				value = '' + config.get( key );
+				trace( key, value );
+				if (value != null && !environment.exists( key )) {
+					Sys.putEnv( key, value );
+					
+					environment.set( key, value );
+					userEnvironment.set( key, value );
+					
+				}
+				
+		}
+	}
+	
+	/**
+	 * Anything not `variables`, `environment`, `define`, `if` or one of
+	 * their short forms gets treated as a regular expression.
+	 */
+	private function setupERegMap(config:DynamicAccess<Dynamic>):Void {
+		for (key in config.keys()) switch(key) {
+			case 'variables', 'environment', 'var', 'env', 'if', 'define':
+				// Skip these.
+				
+			case _:
+				eregMap.set( key, new EReg( key.indexOf("${") > -1 ? substitution( key) : key, '') );
 				
 		}
 	}
