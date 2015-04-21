@@ -116,13 +116,16 @@ class Tuli {
 					
 				}
 				
+			case 'if':
+				trace( conditional( config.get( key ) ) );
+				
 			case _:
 				// Ignore for now, need to setup `environment` and `variables`.
 				
 		}
 		
 		for (key in config.keys()) switch(key) {
-			case 'variables', 'environment', 'var', 'env':
+			case 'variables', 'environment', 'var', 'env', 'if':
 				// Skip these.
 				
 			case _ if (key.indexOf("${") > -1):
@@ -132,7 +135,7 @@ class Tuli {
 				eregMap.set( key, new EReg(key, '') );
 				
 		}
-		trace( defines );
+		
 		allFiles = recurse( '${Sys.getCwd()}/${variables.exists("input") ? variables.get("input") : ""}/'.normalize() );
 		
 		for (id in eregMap.keys()) {
@@ -308,6 +311,86 @@ class Tuli {
 		}
 		
 		return results.filter( function(f) return f != null );
+	}
+	
+	
+	private function conditional(object:DynamicAccess<Dynamic>):Array<Dynamic> {
+		var results:Array<Dynamic> = [];
+		
+		for (key in object.keys()) {
+			var index = -1;
+			var value = '';
+			var result:Null<Bool> = null;
+			
+			while (index++ < key.length) switch(key.fastCodeAt(index)) {
+				case '&'.code if (key.fastCodeAt(index + 1) == '&'.code):
+					// Ignore the second `&`.
+					index += 1;
+					result = result != null ? result && toBoolean( value ) : toBoolean( value );
+					
+				case '|'.code if (key.fastCodeAt(index + 1) == '|'.code):
+					// Ignore the second `|`.
+					index += 1;
+					
+				case _:
+					var next = nextBinop( key.substring(index) );
+					value = key.substring(index, index + next).trim();
+					index += next;
+					
+			}
+			
+			result = result == null ? toBoolean( value ) : result;
+			
+			if (result) {
+				results.push( object.get( key ) );
+				
+			}
+			
+		}
+		
+		return results;
+	}
+	
+	/**
+	 * Converts `value` into a boolean based on its
+	 * existence in `defines`.
+	 */
+	private function toBoolean(value:String):Bool {
+		var index = -1;
+		var bool = true;
+		var name = '';
+		
+		while (index++ < value.length) switch (value.fastCodeAt(index)) {
+			case '!'.code if (value.fastCodeAt(index + 1) > ' '.code):
+				bool = !bool;
+				
+			case ' '.code:
+				
+			case _:
+				name += value.charAt(index);
+				
+		}
+		
+		return bool ? defines.indexOf( name ) > -1 : defines.indexOf( name ) == -1;
+	}
+	
+	/**
+	 * Find the next `&&` or `||` binop and return its `index-1`.
+	 */
+	private function nextBinop(value:String):Int {
+		var index = -1;
+		var result = value.length;
+		
+		while (index++ < value.length) switch(value.fastCodeAt(index)) {
+			case x if (['|'.code, '&'.code].indexOf(x) > -1 && value.fastCodeAt(index + 1) == x):
+				result = index-1;
+				break;
+				
+			case _:
+				
+		}
+		
+		return result;
 	}
 	
 	private function run(actions:Array<{action:Action,command:String}>):Void {

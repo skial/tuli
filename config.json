@@ -1,10 +1,23 @@
 {
 	"define":[
-		"neko", "haxe", "command"
+		"native"
 	],
 	"env":{
 		"API_KEY":"abc123",
 		"API_SECRET":"123abc"
+	},
+	"if":{
+		"native":{
+			"env":{
+				"thread_count":8
+			}
+		},
+		"native && native":{
+			
+		},
+		"!native":{
+			
+		}
 	},
 	"var":{
 		"in":"./src/",
