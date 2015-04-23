@@ -16,8 +16,38 @@ using Lambda;
 using Reflect;
 using StringTools;
 using sys.io.File;
+using uhx.sys.Tuli;
 using haxe.io.Path;
 using sys.FileSystem;
+
+private class Job {
+	
+	public var expression:EReg;
+	public var memory:Array<String>;
+	public var commands:Array<String>;
+	public var variables:StringMap<String>;
+	
+	public var execute:EReg->Void = null;
+	
+	public function new(expression:EReg) {
+		this.expression = expression;
+		memory = [];
+		commands = [];
+		variables = new StringMap();
+		
+	}
+	
+}
+
+private typedef CachedCommand = {
+	var action:Action;
+	var command:EReg->String;
+}
+
+private typedef PopulatedCommand = {
+	var action:Action;
+	var command:String;
+}
 
 private class BIO {
 	
@@ -61,12 +91,11 @@ class Tuli {
 	
 	public var config:DynamicAccess<Dynamic>;
 	
+	private var jobs:StringMap<Job>;
 	private var defines:Array<String>;
 	private var variables:StringMap<String>;
 	private var environment:StringMap<String>;
 	private var userEnvironment:StringMap<String>;
-	
-	private var eregMap:StringMap<EReg>;
 	
 	public var allFiles:Array<String>;
 	
@@ -74,45 +103,23 @@ class Tuli {
 		if ( cf == null ) throw 'The configuration file can not be null.';
 		
 		defines = [];
-		eregMap = new StringMap();
+		jobs = new StringMap();
 		variables = new StringMap();
 		environment = Sys.environment();
 		userEnvironment = new StringMap();
 		config = Json.parse( cf.getContent() );
 		
 		setupTopLevel( config );
-		setupERegMap( config );
+		setupJobs( config );
 		
 		allFiles = recurse( '${Sys.getCwd()}/${variables.exists("input") ? variables.get("input") : ""}/'.normalize() );
 		
-		for (id in eregMap.keys()) {
-			var ereg = eregMap.get( id );
-			var content:DynamicAccess<Array<String>> = config.get( id );
+		for (id in jobs.keys()) {
+			var job = jobs.get( id );
 			
-			var commands:Array<String> = [];
-			var memory:StringMap<BIO> = new StringMap();
-			
-			// Make sure `memory` and `commands` or their short forms are at the front.
-			var defaults = ['mem', 'cmd', 'memory', 'commands'].filter( function(d) return content.exists(d) );
-			var keys = defaults.concat( [for (k in content.keys()) k].filter( function(k) return defaults.indexOf( k ) == -1 ) );
-			
-			for (file in allFiles) if (ereg.match( file )) {
-				for (key in keys) switch (key) {
-					case 'memory', 'mem':
-						for (value in content.get( key )) {
-							memory.set( '$id$key', new BIO( Bytes.alloc( file.stat().size ) ) );
-						}
-						
-					case 'commands', 'cmd':
-						for (value in content.get( key )) {
-							run( actions( substitution( value, ereg ) ) );
-							
-						}
-						
-					case _:
-						continue;
-						
-				}
+			for (file in allFiles) if (job.expression.match( file )) {
+				job.execute(job.expression);
+				
 				
 			}
 			
@@ -128,41 +135,24 @@ class Tuli {
 		for (key in config.keys()) switch(key) {
 			case 'define':
 				defines = defines.concat( (config.get( key ):Array<String>) );
+				trace( defines );
 				
 			case 'environment', 'env':
 				setupEnvironment( config.get( key ) );
 				
 			case 'variables', 'var':
-				setupVariables( config.get( key ) );
+				variables = variables.concat( setupVariables( config.get( key ) ) );
 				
 			case 'if':
 				for (config in conditional( config.get( key ) )) {
 					setupTopLevel( config );
-					setupERegMap( config );
+					setupJobs( config );
 					
 				}
 				
 			case _:
 				// Ignore for now, need to setup `environment` and `variables`.
 				
-		}
-	}
-	
-	private function setupVariables(config:DynamicAccess<Dynamic>):Void {
-		var value = null;
-		
-		for (key in config.keys()) switch (key) {
-			case 'if':
-				for (config in conditional( config.get( key ) )) {
-					setupVariables( config );
-					
-				}
-				
-			case _:
-				value = config.get( key );
-				trace( key, value );
-				if (value != null && !variables.exists( key )) variables.set( key, value );
-			
 		}
 	}
 	
@@ -190,18 +180,72 @@ class Tuli {
 		}
 	}
 	
+	private function setupVariables(config:DynamicAccess<Dynamic>):StringMap<String> {
+		var result = new StringMap<String>();
+		var value = null;
+		
+		for (key in config.keys()) switch (key) {
+			case 'if':
+				for (config in conditional( config.get( key ) )) {
+					result = result.concat( setupVariables( config ) );
+					
+				}
+				
+			case _:
+				value = config.get( key );
+				trace( key, value );
+				if (value != null && !result.exists( key )) result.set( key, value );
+			
+		}
+		
+		return result;
+	}
+	
 	/**
 	 * Anything not `variables`, `environment`, `define`, `if` or one of
 	 * their short forms gets treated as a regular expression.
 	 */
-	private function setupERegMap(config:DynamicAccess<Dynamic>):Void {
+	private function setupJobs(config:DynamicAccess<Dynamic>):Void {
 		for (key in config.keys()) switch(key) {
 			case 'variables', 'environment', 'var', 'env', 'if', 'define':
 				// Skip these.
 				
 			case _:
-				eregMap.set( key, new EReg( key.indexOf("${") > -1 ? substitution( key) : key, '') );
+				var job = new Job( new EReg( key.indexOf("${") > -1 ? substitution( key )(null) : key, '') );
+				populateJob(job, config.get( key ));
+				prepareJob(job);
+				jobs.set( key, job );
 				
+		}
+	}
+	
+	private function populateJob(job:Job, data:DynamicAccess<Dynamic>):Void {
+		for (key in data.keys()) switch (key) {
+			case 'variables', 'var':
+				job.variables = job.variables.concat( setupVariables( data.get( key ) ) );
+				
+			case 'commands', 'cmd':
+				job.commands = job.commands.concat( (data.get( key ):Array<String>) );
+				
+			case 'memory', 'mem':
+				job.memory = job.memory.concat( (data.get( key ):Array<String>) );
+				
+			case 'if':
+				for (data in conditional( data.get( key ) )) {
+					populateJob(job, data);
+					
+				}
+				
+			case _:
+		}
+	}
+	
+	public function prepareJob(job:Job):Void {
+		var commands = [for (cmd in job.commands) actions(cmd)];
+		job.execute = function(e:EReg) {
+			for (actions in commands) {
+				run( [for(action in actions(e)) { action:action.action, command:action.command(e) }] );
+			}
 		}
 	}
 	
@@ -209,7 +253,8 @@ class Tuli {
 	 * Replace `${name}` with a matching value from `variables` or `environment`.
 	 * Replace `$0` with whatever is returned by the `ereg` regular expression.
 	 */
-	private function substitution(value:String, ?ereg:EReg):String {
+	private function substitution(value:String, ?ereg:EReg):EReg->String {
+		var sections:Array<EReg->String> = [];
 		var i = -1;
 		var result = '';
 		
@@ -236,10 +281,12 @@ class Tuli {
 				
 				// See if the value exists and add it if it does.
 				if (exists = variables.exists( id )) {
-					result += variables.get( id );
+					sections.push( function(s, _) { return s + variables.get(id); }.bind(new String(result), _) );
+					result = '';
 					
 				} else if (exists = environment.exists( id )) {
-					result += environment.get( id );
+					sections.push( function(s, _) { return s + environment.get(id); }.bind(new String(result), _) );
+					result = '';
 					
 				}
 				
@@ -266,8 +313,10 @@ class Tuli {
 				
 				// See if the value exists and add it if it does.
 				if (no != null) {
-					result += ereg.matched( no );
 					i = j;
+					
+					sections.push( function(s:String, i:Int, e:EReg) { return s + e.matched( no ); } .bind(new String(result), no, _) );
+					result = '';
 					
 				}
 				
@@ -276,34 +325,40 @@ class Tuli {
 				
 		}
 		
-		return result;
+		if (result != null && result != '') sections.push( function(_) return new String(result) );
+		
+		return function(e:EReg) {
+			var buffer = new StringBuf();
+			for (section in sections) buffer.add( section(e) );
+			return buffer.toString();
+		}
 	}
 	
-	private function actions(value:String):Array<{action:Action, command:String}> {
+	private function actions(value:String):EReg->Array<CachedCommand> {
 		var i = -1;
 		var code = -1;
 		var action = Action.NONE;
 		var command = '';
-		var results = [];
+		var results:Array<CachedCommand> = [];
 		
 		while (i++ < value.length) switch (code = value.fastCodeAt(i)) {
 			case '|'.code:
-				results.push( { action:action, command:command.trim() } );
+				results.push( { action:action, command:function(s, e) { return substitution(s, e)(e); }.bind(new String(command.trim()), _) } );
 				action = Action.PIPELINE;
 				command = '';
 				
 			case '<'.code:
-				results.push( { action:action, command:command.trim() } );
+				results.push( { action:action, command:function(s, e) { return substitution(s, e)(e); }.bind(new String(command.trim()), _) } );
 				action = Action.REDIRECT_INPUT;
 				command = '';
 				
 			case '>'.code:
-				results.push( { action:action, command:command.trim() } );
+				results.push( { action:action, command:function(s, e) { return substitution(s, e)(e); }.bind(new String(command.trim()), _) } );
 				action = Action.REDIRECT_OUTPUT;
 				command = '';
 				
 			case x if (x >= '0'.code && x <= '2'.code && value.fastCodeAt(i+1) == '>'.code):
-				results.push( { action:action, command:command.trim() } );
+				results.push( { action:action, command:function(s, e) { return substitution(s, e)(e); }.bind(new String(command.trim()), _) } );
 				action = switch(x) {
 					case 0: Action.REDIRECT_STDIN;
 					case 1: Action.REDIRECT_STDOUT;
@@ -317,7 +372,7 @@ class Tuli {
 				
 		}
 		
-		if (command != '') results.push( { action:action, command:command.trim() } );
+		if (command != '') results.push( { action:action, command:function(s, e) { return substitution(s, e)(e); } .bind(new String(command.trim()), _) } );
 		
 		/**
 		 * `cat < C:/path/to/File.md > C:/path/to/Output.md`
@@ -334,7 +389,6 @@ class Tuli {
 		 * 		{command:'C:/path/to/Output.md', action:Action.REDIRECT_OUTPUT},
 		 * ]
 		 * -----
-		 * As I ignore the action value from now on.
 		 */
 		for (i in 0...results.length) {
 			if (results[i] != null && results[i].action == Action.REDIRECT_INPUT) {
@@ -347,10 +401,12 @@ class Tuli {
 			
 		}
 		
-		return results.filter( function(f) return f != null );
+		var filtered = results.filter( function(f) return f != null );
+		
+		return function(e:EReg) return filtered;
 	}
 	
-	private function run(actions:Array<{action:Action,command:String}>):Void {
+	private function run(actions:Array<PopulatedCommand>):Void {
 		var previous:Process = null;
 		var collection:Array<Process> = [];
 		
@@ -359,7 +415,6 @@ class Tuli {
 		var parts:Array<String> = [];
 		
 		for (action in actions) {
-			trace( action );
 			switch (action.action) {
 				case Action.NONE if (action.command.isAbsolute() && action.command.exists()):
 					trace( 'creating file read : ${action.command}' );
@@ -367,6 +422,7 @@ class Tuli {
 						stdin:null,
 						stdout:File.read( action.command ),
 						stderr:null,
+						name:new String(action.command),
 						close:function() untyped __this__.stdout.close(),
 					} ) -1;
 					
@@ -376,6 +432,7 @@ class Tuli {
 						stdin:File.write( action.command ),
 						stdout:null,
 						stderr:null,
+						name:new String(action.command),
 						close:function() untyped __this__.stdin.close(),
 					} ) -1;
 					
@@ -527,6 +584,16 @@ class Tuli {
 			}
 			
 		}
+	}
+	
+	//// STATICS
+	
+	private static function concat(a:StringMap<String>, b:StringMap<String>):StringMap<String> {
+		var map = new StringMap<String>();
+		
+		for (x in [a, b]) for (key in x.keys()) map.set(key, x.get( key ));
+		
+		return map;
 	}
 	
 }
