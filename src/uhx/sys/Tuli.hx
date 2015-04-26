@@ -108,11 +108,17 @@ class Tuli {
 		environment = Sys.environment();
 		userEnvironment = new StringMap();
 		config = Json.parse( cf.getContent() );
-		
+	}
+	
+	public function setupConfig():Void {
 		setupTopLevel( config );
 		setupJobs( config );
 		
 		allFiles = recurse( '${Sys.getCwd()}/${variables.exists("input") ? variables.get("input") : ""}/'.normalize() );
+	}
+	
+	public function runJobs():Void {
+		trace( defines );
 		
 		for (id in jobs.keys()) {
 			var job = jobs.get( id );
@@ -124,7 +130,6 @@ class Tuli {
 			}
 			
 		}
-		
 	}
 	
 	/**
@@ -135,7 +140,6 @@ class Tuli {
 		for (key in config.keys()) switch(key) {
 			case 'define':
 				defines = defines.concat( (config.get( key ):Array<String>) );
-				trace( defines );
 				
 			case 'environment', 'env':
 				setupEnvironment( config.get( key ) );
@@ -516,7 +520,7 @@ class Tuli {
 	 */
 	private function conditional(object:DynamicAccess<Dynamic>):Array<Dynamic> {
 		var results:Array<Dynamic> = [];
-		
+		trace( defines );
 		for (key in object.keys()) {
 			var index = -1;
 			var value = '';
