@@ -118,6 +118,11 @@ where the index starts at `1`. To access the original matched path use `$0`.
 		"cmd":[
 			"$0 | marked | $1.html"
 		]
+	},
+	"(${path}).js$":{
+		"cmd":[
+			"$0 | uglifyjs - --compress --mangle | $1.min.js
+		]
 	}
 }
 ```
