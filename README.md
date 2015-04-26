@@ -2,67 +2,136 @@
 
 > Swahili for static
 
-Its basic goal is to be a static site generator. 
-
-You can register interest in a specific file extension, either on detection
-or after creation of that specific file extension.
-
-You can register to add new data to the global `Tuli.config` variable before or
-after creation of files.
-
-You can also register handlers to be run when everything is being created and saved.
-
 ## Installation
 
-You will need to install the following libraries through `haxelib git <name> <url>
-<branch> <folder>` or clone them locally and run `haxelib local <zip>`
+With haxelib git.
 
-1. uhu: 
-	+ git - `haxelib git uhu https://github.com/skial/uhu experimental src`
-	+ zip:
-		* download - `https://github.com/skial/uhu/archive/experimental.zip`
-		* install - `haxelib local experimental.zip`
-2. klas:
-	+ git - `haxelib git klas https://github.com/skial/klas master src`
-	+ zip:
-		* download - `https://github.com/skial/klas/archive/master.zip`
-		* install - `haxelib local master.zip`
-		
-For any HTML file to be parsed correctly a program is required to turn it into valid
-XML so the `Xml` class can parse it without croaking.
+```
+haxelib git tuli https://github.com/skial/tuli master src
+```	
+	
+With haxelib local.
 
-1. tidy - `http://w3c.github.io/tidy-html5/`
+```
+# Download the archive.
+https://github.com/skial/tuli/archive/master.zip
 
-## Setup
+# Install archive contents.
+haxelib local master.zip
+```
 
-You will need to create a `config.json` file in the root directory you will be running
-Tuli in.
+## Reservered Keywords
 
-Heres the basics you will need in `config.json` -
++ `var`, `variables`
++ `env`, `environment`
++ `cmd`, `commands`
++ `mem`, `memory`
++ `define`
++ `if`
+
+## Keyword Scopes
+
++ global
+	- `if`
+
++ toplevel
+	- `var`, `variables`
+	- `env`, `environment`
+	- `define`
+
++ local
+	- `var`, `variables`
+	- `cmd`, `commands`
+	- `mem`, `memory`
+	
+The following code example explains the above scopes.
 
 ```json
 {
-	"input":"path/to/input/folder",
-	"output":"path/to/output/folder",
-	"ignore":["hx"]
+	"toplevel":{
+		"local":{
+			
+		}
+	},
+	"toplevel":{
+		"local":{
+			"if":{
+				
+			}
+		},
+		"if":{
+			
+		}
+	},
+	"if":{
+		
+	}
 }
 ```
 
-Then make sure a class `implements Klas` and you have `-lib klas` and `-lib uhu` in
-your `.hxml` build file.
+## Introduction
 
-To register interest in any markdown files that already exist, first create a static
-`initialize` method. In side add -
+Tuli accepts a `json` file, looking for by default, a file named `config.json`.
+Anything not a [reservered keyword][#reservered-keywords] in the toplevel 
+[scope][#keyword-scopes] will be treated as a Haxe 
+[regular expression][l1].
 
+A basic `config.json` file looks like the following.
+
+```json
+{
+	"var":{
+		"input":"./src",
+		"output":"./bin"
+	},
+	"([a-zA-Z0-9~/:]+).md$":{
+		"cmd":[
+			"$0 | marked | $1.html"
+		]
+	}
+}
 ```
-Tuli.onExtension('md', Your.handler, Before);
+
+### Rectification
+
+#### Regular Expression Groups
+
+```json
+{
+	"([a-zA-Z0-9~/:]+).md$":{
+		"cmd":[
+			"$0 | marked | $1.html"
+		]
+	}
+}
 ```
 
-then in your `.hxml` build file add -
+The example above provides a regular expression grouping everything up to
+`.md` of the path.
 
-```cmd
---macro path.to.you.Class.initialize()
+To access a group, use dollar `$` followed by an integer representing an index, 
+where the index starts at `1`. To access the original matched path use `$0`.
+
+#### Variable and Enivronment
+
+```json
+{
+	"var":{
+		"path":"([a-zA-Z0-9~/:]+)"
+	},
+	"${path}.md$":{
+		"cmd":[
+			"$0 | marked | $1.html"
+		]
+	}
+}
 ```
 
-For safety its best to wrap all Tuli callbacks in a conditional `#if macro` and 
-`#end` statement.
+To access a variable or environment value, use `${` followed by the variables
+or environments name followed by closing bracket `}`.
+
+Variable names are always assessed before environment names.
+
+[l2]: http://haxe.org/manual/lf-string-interpolation.html "Haxe String Interpolation"
+[l1]: http://haxe.org/manual/std-regex.html "Haxe Regular Expressions"
+
