@@ -18,6 +18,7 @@ using Lambda;
  */
 
 @:cmd
+@:access(uhx.sys.Tuli)
 @:usage( 'haxelib run tuli [options]' )
 class LibRunner implements Klas {
 	
@@ -26,94 +27,47 @@ class LibRunner implements Klas {
 	}
 	
 	/**
-	 * Allows you to run `tuli [options]` from now on.
+	 * Makes tuli global.
 	 */
 	@alias('g') 
 	public var global:Bool;
 	
 	/**
-	 * Remove the output directory.
+	 * The location of your json file. Default config.json.
 	 */
 	@alias('c') 
-	public var clean:Bool;
+	public var config:String = 'config.json';
 	
 	/**
-	 * Removes the output directory and builds
-	 * everything from scratch.
+	 * Define a conditional flag.
 	 */
-	@alias('b') 
-	public var build:Bool;
-	
-	/**
-	 * Only processes files that have changed or been created
-	 * since the last time Tuli was run.
-	 */
-	@alias('u') 
-	public var update:Bool;
-	
-	/**
-	 * Run `update` and start a server from the output directory
-	 * on port 8080.
-	 */
-	@alias('t') 
-	public var test:Bool;
-	
-	/**
-	 * Sets the location of your configuration file.
-	 * The default location is the current working directory with
-	 * the name of `config.json`.
-	 */
-	@alias('f') 
-	public var file:String = 'config.json';
+	@alias('D', 'd')
+	public var defines:Array<String> = [];
 	
 	private var tuli:Tuli;
 	
 	public function new(args:Array<String>) {
-		var set = [global, clean, build, update, test].filter( function(b) {
-			return b;
-		} );
-		
-		if (set.length == 0) {
-			// Make update the default action.
-			update = true;
-			
-		}
-		
 		directory = args[args.length - 1].normalize();
-		file = '$directory/$file'.normalize();
+		config = '$directory/$config'.normalize();
 		
 		Sys.setCwd( directory );
 		
-		if (file.exists()) {
-			tuli = new Tuli( file );
+		if (config.exists()) {
+			tuli = new Tuli( config );
+			
+			if (defines.length > 0) tuli.defines = tuli.defines.concat( defines );
 			
 		} else {
-			Sys.println( 'A configuration file could not be found in $directory, please use -f <path> to set one.' );
+			Sys.println( 'A configuration file could not be found in $directory, please use -c <path> to set one.' );
 			return;
 			
 		}
 		
 		if (global) makeGlobal();
 		
-		if (clean) {
-			runClean();
-			
-		}
-		
-		if (build) {
-			runClean();
-			runBuild();
-			
-		}
-		
-		if (update) {
-			runUpdate();
-			
-		}
-		
-		if (test) {
-			runUpdate();
-			serve();
+		if (tuli != null) {
+			tuli.setupConfig();
+			tuli.runJobs();
 			
 		}
 	}
@@ -154,22 +108,6 @@ class LibRunner implements Klas {
 				Sys.println( 'Can not determine the OS type, apologies.' );
 				
 		}
-	}
-	
-	private function runClean() {
-		
-	}
-	
-	private function runBuild() {
-		
-	}
-	
-	private function runUpdate() {
-		
-	}
-	
-	private function serve() {
-		
 	}
 	
 }
