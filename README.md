@@ -114,7 +114,7 @@ where the index starts at `1`. To access the original matched path use `$0`.
 	"var":{
 		"path":"([a-zA-Z0-9~/:]+)"
 	},
-	"${path}.md$":{
+	"(${path}).md$":{
 		"cmd":[
 			"$0 | marked | $1.html"
 		]
@@ -128,7 +128,7 @@ where the index starts at `1`. To access the original matched path use `$0`.
 ```
 
 To access a variable or environment value, use `${` followed by the variables
-or environments name followed by closing bracket `}`. Variable names are always 
+or environments name followed by a closing bracket `}`. Variable names are always 
 assessed before environment names.
 
 [l2]: http://haxe.org/manual/lf-string-interpolation.html "Haxe String Interpolation"
