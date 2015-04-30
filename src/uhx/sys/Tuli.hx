@@ -119,7 +119,6 @@ class Tuli {
 	
 	public function runJobs():Void {
 		trace( defines );
-		
 		for (id in jobs.keys()) {
 			var job = jobs.get( id );
 			
@@ -267,15 +266,15 @@ class Tuli {
 		while (i++ < value.length) switch (value.fastCodeAt(i)) {
 			case '$'.code if (value.fastCodeAt(i + 1) == '{'.code):
 				var id = '';
-				var j = i + 2;
+				var j = i + 1;
+				var code = -1;
 				
-				while (true) switch (value.fastCodeAt(j)) {
+				while (j++ < value.length) switch (code = value.fastCodeAt(j)) {
 					case '}'.code: 
 						break;
 						
 					case _:
-						id += value.charAt( j );
-						j++;
+						id += String.fromCharCode( code );
 						
 				}
 				
@@ -296,15 +295,43 @@ class Tuli {
 				
 				if (exists) i = j;
 				
-			case '$'.code if (ereg != null && value.fastCodeAt(i + 1) >= '0'.code && value.fastCodeAt(i+1) <= '9'.code):
+			case '$'.code if (isCharacter(value.fastCodeAt(i + 1))):
+				var id = '';
+				var j = i;
+				var code = -1;
+				
+				while (j++ < value.length) switch (code = value.fastCodeAt(j)) {
+					case _ if(!isCharacter(code) && !isNumerical(code) && code != '_'.code):
+						break;
+						
+					case _:
+						id += String.fromCharCode( code );
+						
+				}
+				
+				var exists = false;
+				
+				// See if the value exists and add it if it does.
+				if (exists = variables.exists( id )) {
+					sections.push( function(s, _) { return s + variables.get(id); }.bind(new String(result), _) );
+					result = '';
+					
+				} else if (exists = environment.exists( id )) {
+					sections.push( function(s, _) { return s + environment.get(id); }.bind(new String(result), _) );
+					result = '';
+					
+				}
+				
+				if (exists) i = j;
+				
+			case '$'.code if (ereg != null && isNumerical(value.fastCodeAt(i + 1))):
 				var id = '';
 				var no = -1;
-				var j = i + 1;
+				var j = i;
 				
-				while (j < value.length) switch (value.fastCodeAt(j)) {
+				while (j++ < value.length) switch (value.fastCodeAt(j)) {
 					case x if (x >= '0'.code && x <= '9'.code):
 						id += String.fromCharCode(x);
-						j++;
 						
 					case _:
 						break;
@@ -598,6 +625,14 @@ class Tuli {
 		for (x in [a, b]) for (key in x.keys()) map.set(key, x.get( key ));
 		
 		return map;
+	}
+	
+	private inline static function isNumerical(value:Int):Bool {
+		return value >= '0'.code && value <= '9'.code;
+	}
+	
+	private inline static function isCharacter(value:Int):Bool {
+		return value >= 'a'.code && value <= 'z'.code || value >= 'A'.code && value <= 'Z'.code;
 	}
 	
 }
