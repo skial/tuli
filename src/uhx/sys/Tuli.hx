@@ -1,5 +1,6 @@
 package uhx.sys;
 
+import haxe.crypto.Md5;
 import haxe.ds.ArraySort;
 import haxe.io.Input;
 import haxe.io.Output;
@@ -20,20 +21,43 @@ using uhx.sys.Tuli;
 using haxe.io.Path;
 using sys.FileSystem;
 
-private class Job {
+private class Base {
+	
+	public var variables:StringMap<String>;
+	public var environment:StringMap<String>;
+	
+	public function new() {
+		variables = new StringMap();
+		environment = new StringMap();
+	}
+	
+}
+
+private class Job extends Base {
 	
 	public var expression:EReg;
-	public var memory:Array<String>;
-	public var commands:Array<String>;
-	public var variables:StringMap<String>;
+	public var memory:Array<String> = [];
+	public var commands:Array<String> = [];
 	
 	public var execute:EReg->Void = null;
 	
 	public function new(expression:EReg) {
 		this.expression = expression;
-		memory = [];
-		commands = [];
-		variables = new StringMap();
+		super();
+		
+	}
+	
+}
+
+private class Section extends Base {
+	
+	public var order:Int = 0;
+	public var name:String;
+	public var jobs:Array<Job> = [];
+	
+	public function new(name:String) {
+		this.name = name;
+		super();
 		
 	}
 	
@@ -91,11 +115,11 @@ class Tuli {
 	
 	public var config:DynamicAccess<Dynamic>;
 	
-	private var jobs:StringMap<Job>;
 	private var defines:Array<String>;
 	private var variables:StringMap<String>;
 	private var environment:StringMap<String>;
 	private var userEnvironment:StringMap<String>;
+	private var sections:Array<Section>;
 	
 	public var allFiles:Array<String>;
 	
@@ -103,53 +127,59 @@ class Tuli {
 		if ( cf == null ) throw 'The configuration file can not be null.';
 		
 		defines = [];
-		jobs = new StringMap();
+		sections = [];
 		variables = new StringMap();
 		environment = Sys.environment();
 		userEnvironment = new StringMap();
 		config = Json.parse( cf.getContent() );
+		
+		sections.push( new Section( 'toplevel' + Md5.encode(cf) ) );
 	}
 	
 	public function setupConfig():Void {
-		setupTopLevel( config );
-		setupJobs( config );
+		setupGlobalScope( config );
+		setupUnknowns( config );
+		
+		for (key in environment.keys()) Sys.putEnv(key, environment.get( key ));
 		
 		allFiles = recurse( '${Sys.getCwd()}/${variables.exists("input") ? variables.get("input") : ""}/'.normalize() );
 	}
 	
 	public function runJobs():Void {
 		trace( defines );
-		for (id in jobs.keys()) {
-			var job = jobs.get( id );
-			
-			for (file in allFiles) if (job.expression.match( file )) {
-				job.execute(job.expression);
-				
+		for (section in sections) {
+			trace( section.name, section.jobs );
+			for (job in section.jobs) {
+				for (file in allFiles) if (job.expression.match( file )) {
+					trace( file );
+					job.execute( job.expression );
+					
+				}
 				
 			}
 			
 		}
+		
 	}
 	
 	/**
 	 * Sets up `define`, `environment`, `variables` and any
 	 * toplevel `if` statements.
 	 */
-	private function setupTopLevel(config:DynamicAccess<Dynamic>):Void {
+	private function setupGlobalScope(config:DynamicAccess<Dynamic>):Void {
 		for (key in config.keys()) switch(key) {
 			case 'define':
 				defines = defines.concat( (config.get( key ):Array<String>) );
 				
 			case 'environment', 'env':
-				setupEnvironment( config.get( key ) );
+				environment = environment.concat( populateMap( config.get( key ) ) );
 				
 			case 'variables', 'var':
-				variables = variables.concat( setupVariables( config.get( key ) ) );
+				variables = variables.concat( populateMap( config.get( key ) ) );
 				
 			case 'if':
 				for (config in conditional( config.get( key ) )) {
-					setupTopLevel( config );
-					setupJobs( config );
+					setupGlobalScope( config );
 					
 				}
 				
@@ -159,46 +189,25 @@ class Tuli {
 		}
 	}
 	
-	private function setupEnvironment(config:DynamicAccess<Dynamic>):Void {
-		var value = null;
-		
-		for (key in config.keys()) switch (key) {
-			case 'if':
-				for (config in conditional( config.get( key ) )) {
-					setupEnvironment( config );
-					
-				}
-				
-			case _:
-				value = '' + config.get( key );
-				trace( key, value );
-				if (value != null && !environment.exists( key )) {
-					Sys.putEnv( key, value );
-					
-					environment.set( key, value );
-					userEnvironment.set( key, value );
-					
-				}
-				
-		}
-	}
-	
-	private function setupVariables(config:DynamicAccess<Dynamic>):StringMap<String> {
+	private function populateMap(config:DynamicAccess<Dynamic>):StringMap<String> {
 		var result = new StringMap<String>();
 		var value = null;
 		
 		for (key in config.keys()) switch (key) {
 			case 'if':
 				for (config in conditional( config.get( key ) )) {
-					result = result.concat( setupVariables( config ) );
+					result = result.concat( populateMap( config ) );
 					
 				}
 				
 			case _:
 				value = config.get( key );
-				trace( key, value );
-				if (value != null && !result.exists( key )) result.set( key, value );
-			
+				if (value != null && !result.exists( key )) {
+					trace( key, value );
+					result.set( key, '$value' );
+					
+				}
+				
 		}
 		
 		return result;
@@ -208,25 +217,82 @@ class Tuli {
 	 * Anything not `variables`, `environment`, `define`, `if` or one of
 	 * their short forms gets treated as a regular expression.
 	 */
-	private function setupJobs(config:DynamicAccess<Dynamic>):Void {
+	private function setupUnknowns(config:DynamicAccess<Dynamic>):Void {
 		for (key in config.keys()) switch(key) {
-			case 'variables', 'environment', 'var', 'env', 'if', 'define':
+			case 'variables', 'environment', 'var', 'env', 'define':
 				// Skip these.
 				
+			case 'if':
+				for (config in conditional( config.get( key ) )) {
+					setupUnknowns( config );	//	TODO maybe lift key:values into global scope? as this is run before global unknowns.
+					
+				}
+				
 			case _:
+				var value:DynamicAccess<Dynamic> = config.get( key );
+				
+				if (value.exists('cmd')) {
+					var job = new Job( new EReg( key.indexOf("${") > -1 ? substitution( key )(null) : key, '') );
+					populateData(job, value);
+					populateJob(job, value);
+					prepareJob(job);
+					
+					sections[0].jobs.push( job );
+					
+				} else {
+					var section = new Section( key );
+					populateData( section, value );
+					populateSection( section, value );
+					sections.push( section );
+					
+				}
+				
+		}
+	}
+	
+	private function populateData(base:Base, data:DynamicAccess<Dynamic>):Void {
+		for (key in data.keys()) switch (key) {
+			case 'variables', 'var':
+				base.variables = base.variables.concat( populateMap( data.get( key ) ) );
+				
+			case 'environment', 'env':
+				base.environment = base.environment.concat( populateMap( data.get( key ) ) );
+				
+			case 'if':
+				for (data in conditional( data.get( key ) )) {
+					populateData(base, data);
+					
+				}
+				
+			case _:
+		}
+	}
+	
+	private function populateSection(section:Section, data:DynamicAccess<Dynamic>):Void {
+		for (key in data.keys()) switch (key) {
+			case 'variables', 'environment', 'var', 'env':
+				// Skip
+				
+			case 'if':
+				for (data in conditional( data.get( key ) )) {
+					populateSection(section, data);
+					
+				}
+				
+			case _ if ((data.get( key ):DynamicAccess<Dynamic>).exists( 'cmd' )):
 				var job = new Job( new EReg( key.indexOf("${") > -1 ? substitution( key )(null) : key, '') );
-				populateJob(job, config.get( key ));
+				populateData(job, data.get( key ));
+				populateJob(job, data.get( key ));
 				prepareJob(job);
-				jobs.set( key, job );
+				section.jobs.push( job );
+				
+			case _:
 				
 		}
 	}
 	
 	private function populateJob(job:Job, data:DynamicAccess<Dynamic>):Void {
 		for (key in data.keys()) switch (key) {
-			case 'variables', 'var':
-				job.variables = job.variables.concat( setupVariables( data.get( key ) ) );
-				
 			case 'commands', 'cmd':
 				job.commands = job.commands.concat( (data.get( key ):Array<String>) );
 				
