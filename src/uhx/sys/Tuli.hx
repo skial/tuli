@@ -51,9 +51,10 @@ private class Job extends Base {
 
 private class Section extends Base {
 	
-	public var order:Int = 0;
+	public var order:Int = 1;
 	public var name:String;
 	public var jobs:Array<Job> = [];
+	public var prerequisites:Array<String> = [];
 	
 	public function new(name:String) {
 		this.name = name;
@@ -134,11 +135,13 @@ class Tuli {
 		config = Json.parse( cf.getContent() );
 		
 		sections.push( new Section( 'toplevel' + Md5.encode(cf) ) );
+		sections[0].order = 0;
 	}
 	
-	public function setupConfig():Void {
+	public function setup():Void {
 		setupGlobalScope( config );
 		setupUnknowns( config );
+		sortSections();
 		
 		for (key in environment.keys()) Sys.putEnv(key, environment.get( key ));
 		
@@ -148,10 +151,10 @@ class Tuli {
 	public function runJobs():Void {
 		trace( defines );
 		for (section in sections) {
-			trace( section.name, section.jobs );
+			trace( section.name, section.order/*, section.jobs*/ );
 			for (job in section.jobs) {
 				for (file in allFiles) if (job.expression.match( file )) {
-					trace( file );
+					//trace( file );
 					job.execute( job.expression );
 					
 				}
@@ -160,6 +163,29 @@ class Tuli {
 			
 		}
 		
+	}
+	
+	private function sortSections():Void {
+		for (section in sections) for (prerequisite in section.prerequisites) {
+			section.order += findSection(prerequisite);
+		}
+		
+		ArraySort.sort(sections, function(a, b) {
+			return a.order - b.order;
+			
+		} );
+	}
+	
+	private function findSection(name:String):Int {
+		var result = -1;
+		
+		for (i in 0...sections.length) if (sections[i].name == name) {
+			result = i;
+			break;
+			
+		}
+		
+		return result;
 	}
 	
 	/**
@@ -241,6 +267,8 @@ class Tuli {
 					
 				} else {
 					var section = new Section( key );
+					// Make sure `clean` is always the last section to be run.
+					if (key == 'clean') section.order = 999999;
 					populateData( section, value );
 					populateSection( section, value );
 					sections.push( section );
@@ -278,6 +306,9 @@ class Tuli {
 					populateSection(section, data);
 					
 				}
+				
+			case 'prerequisite', 'pre':
+				section.prerequisites = section.prerequisites.concat( (data.get( key ):Array<String>) );
 				
 			case _ if ((data.get( key ):DynamicAccess<Dynamic>).exists( 'cmd' )):
 				var job = new Job( new EReg( key.indexOf("${") > -1 ? substitution( key )(null) : key, '') );
