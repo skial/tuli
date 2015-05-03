@@ -66,7 +66,7 @@ class LibRunner implements Klas {
 		if (global) makeGlobal();
 		
 		if (tuli != null) {
-			tuli.setupConfig();
+			tuli.setup();
 			tuli.runJobs();
 			
 		}
