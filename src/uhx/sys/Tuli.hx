@@ -51,7 +51,6 @@ private class Job extends Base {
 
 private class Section extends Base {
 	
-	public var order:Int = 1;
 	public var name:String;
 	public var jobs:Array<Job> = [];
 	public var prerequisites:Array<String> = [];
@@ -59,7 +58,16 @@ private class Section extends Base {
 	public function new(name:String) {
 		this.name = name;
 		super();
-		
+	}
+	
+}
+
+private class TopLevel extends Section {
+	
+	public var defines:Array<String> = [];
+	
+	public function new(name:String) {
+		super( name );
 	}
 	
 }
@@ -114,47 +122,42 @@ private class BIO {
  */
 class Tuli {
 	
+	private static var toplevel:TopLevel;
+	private static var allFiles:Array<String> = [];
+	private static var sections:Array<Section> = [];
+	private static var sessionEnvironment:StringMap<String> = new StringMap();
+	
 	public var config:DynamicAccess<Dynamic>;
-	
-	private var defines:Array<String>;
-	private var variables:StringMap<String>;
-	private var environment:StringMap<String>;
-	private var userEnvironment:StringMap<String>;
-	private var sections:Array<Section>;
-	
-	public var allFiles:Array<String>;
 	
 	public function new(cf:String) {
 		if ( cf == null ) throw 'The configuration file can not be null.';
 		
-		defines = [];
-		sections = [];
-		variables = new StringMap();
-		environment = Sys.environment();
-		userEnvironment = new StringMap();
 		config = Json.parse( cf.getContent() );
 		
-		sections.push( new Section( 'toplevel' + Md5.encode(cf) ) );
-		sections[0].order = 0;
+		toplevel = new TopLevel( 'toplevel' + Md5.encode(cf) );
+		sessionEnvironment = toplevel.environment.copy();
+		toplevel.environment = toplevel.environment.concat( Sys.environment() );
+		
+		// Only set user defined enviroment `key:value` passed in by command argument or json.
+		for (key in sessionEnvironment.keys()) Sys.putEnv(key, sessionEnvironment.get( key ));
+		
+		sections.push( toplevel );
 	}
 	
 	public function setup():Void {
-		setupGlobalScope( config );
+		setupToplevel( config );
 		setupUnknowns( config );
+		setupLineages();
 		sortSections();
 		
-		for (key in environment.keys()) Sys.putEnv(key, environment.get( key ));
-		
-		allFiles = recurse( '${Sys.getCwd()}/${variables.exists("input") ? variables.get("input") : ""}/'.normalize() );
+		allFiles = recurse( '${Sys.getCwd()}/${toplevel.variables.exists("input") ? toplevel.variables.get("input") : ""}/'.normalize() );
 	}
 	
 	public function runJobs():Void {
-		trace( defines );
 		for (section in sections) {
-			trace( section.name, section.order/*, section.jobs*/ );
+			trace( section.name );
 			for (job in section.jobs) {
 				for (file in allFiles) if (job.expression.match( file )) {
-					//trace( file );
 					job.execute( job.expression );
 					
 				}
@@ -165,47 +168,34 @@ class Tuli {
 		
 	}
 	
+	private function setupLineages():Void {
+		for (section in sections) section.prerequisites = lineage( section );
+	}
+	
 	private function sortSections():Void {
-		for (section in sections) for (prerequisite in section.prerequisites) {
-			section.order += findSection(prerequisite);
-		}
-		
 		ArraySort.sort(sections, function(a, b) {
-			return a.order - b.order;
-			
-		} );
+			if (a.name == 'clean') return 1;
+			if (b.name == 'clean') return -1;
+			if (a.prerequisites.indexOf( b.name ) > -1) return 1;
+			if (b.prerequisites.indexOf( a.name ) > -1) return -1;
+			return 0;
+		});
 	}
 	
-	private function findSection(name:String):Int {
-		var result = -1;
-		
-		for (i in 0...sections.length) if (sections[i].name == name) {
-			result = i;
-			break;
-			
-		}
-		
-		return result;
-	}
-	
-	/**
-	 * Sets up `define`, `environment`, `variables` and any
-	 * toplevel `if` statements.
-	 */
-	private function setupGlobalScope(config:DynamicAccess<Dynamic>):Void {
+	private function setupToplevel(config:DynamicAccess<Dynamic>):Void {
 		for (key in config.keys()) switch(key) {
 			case 'define':
-				defines = defines.concat( (config.get( key ):Array<String>) );
+				toplevel.defines = toplevel.defines.concat( (config.get( key ):Array<String>) );
 				
 			case 'environment', 'env':
-				environment = environment.concat( populateMap( config.get( key ) ) );
+				toplevel.environment = toplevel.environment.concat( populateMap( config.get( key ) ) );
 				
 			case 'variables', 'var':
-				variables = variables.concat( populateMap( config.get( key ) ) );
+				toplevel.variables = toplevel.variables.concat( populateMap( config.get( key ) ) );
 				
 			case 'if':
 				for (config in conditional( config.get( key ) )) {
-					setupGlobalScope( config );
+					setupToplevel( config );
 					
 				}
 				
@@ -239,10 +229,6 @@ class Tuli {
 		return result;
 	}
 	
-	/**
-	 * Anything not `variables`, `environment`, `define`, `if` or one of
-	 * their short forms gets treated as a regular expression.
-	 */
 	private function setupUnknowns(config:DynamicAccess<Dynamic>):Void {
 		for (key in config.keys()) switch(key) {
 			case 'variables', 'environment', 'var', 'env', 'define':
@@ -263,12 +249,10 @@ class Tuli {
 					populateJob(job, value);
 					prepareJob(job);
 					
-					sections[0].jobs.push( job );
+					toplevel.jobs.push( job );
 					
 				} else {
 					var section = new Section( key );
-					// Make sure `clean` is always the last section to be run.
-					if (key == 'clean') section.order = 999999;
 					populateData( section, value );
 					populateSection( section, value );
 					sections.push( section );
@@ -354,7 +338,7 @@ class Tuli {
 	 * Replace `$0` with whatever is returned by the `ereg` regular expression.
 	 */
 	private function substitution(value:String, ?ereg:EReg):EReg->String {
-		var sections:Array<EReg->String> = [];
+		var parts:Array<EReg->String> = [];
 		var i = -1;
 		var result = '';
 		
@@ -380,12 +364,12 @@ class Tuli {
 				var exists = false;
 				
 				// See if the value exists and add it if it does.
-				if (exists = variables.exists( id )) {
-					sections.push( function(s, _) { return s + variables.get(id); }.bind(new String(result), _) );
+				if (exists = toplevel.variables.exists( id )) {
+					parts.push( function(s, _) { return s + toplevel.variables.get(id); }.bind(new String(result), _) );
 					result = '';
 					
-				} else if (exists = environment.exists( id )) {
-					sections.push( function(s, _) { return s + environment.get(id); }.bind(new String(result), _) );
+				} else if (exists = toplevel.environment.exists( id )) {
+					parts.push( function(s, _) { return s + toplevel.environment.get(id); }.bind(new String(result), _) );
 					result = '';
 					
 				}
@@ -409,12 +393,12 @@ class Tuli {
 				var exists = false;
 				
 				// See if the value exists and add it if it does.
-				if (exists = variables.exists( id )) {
-					sections.push( function(s, _) { return s + variables.get(id); }.bind(new String(result), _) );
+				if (exists = toplevel.variables.exists( id )) {
+					parts.push( function(s, _) { return s + toplevel.variables.get(id); }.bind(new String(result), _) );
 					result = '';
 					
-				} else if (exists = environment.exists( id )) {
-					sections.push( function(s, _) { return s + environment.get(id); }.bind(new String(result), _) );
+				} else if (exists = toplevel.environment.exists( id )) {
+					parts.push( function(s, _) { return s + toplevel.environment.get(id); }.bind(new String(result), _) );
 					result = '';
 					
 				}
@@ -443,7 +427,7 @@ class Tuli {
 				if (no != null) {
 					i = j;
 					
-					sections.push( function(s:String, i:Int, e:EReg) { return s + e.matched( no ); } .bind(new String(result), no, _) );
+					parts.push( function(s:String, i:Int, e:EReg) { return s + e.matched( no ); } .bind(new String(result), no, _) );
 					result = '';
 					
 				}
@@ -453,11 +437,11 @@ class Tuli {
 				
 		}
 		
-		if (result != null && result != '') sections.push( function(_) return new String(result) );
+		if (result != null && result != '') parts.push( function(_) return new String(result) );
 		
 		return function(e:EReg) {
 			var buffer = new StringBuf();
-			for (section in sections) buffer.add( section(e) );
+			for (part in parts) buffer.add( part(e) );
 			return buffer.toString();
 		}
 	}
@@ -585,23 +569,52 @@ class Tuli {
 		
 	}
 	
-	private function bypass(a:Bool):Bool {
-		return a;
+	//// STATICS METHODS
+	
+	/**
+	 * Returns the index if `name` matches a section, if not `-1`.
+	 */
+	private static function findSection(name:String):Int {
+		var result = -1;
+		
+		for (i in 0...sections.length) if (sections[i].name == name) {
+			result = i;
+			break;
+			
+		}
+		
+		return result;
 	}
 	
-	private function and(a:Bool, b:Bool):Bool {
-		return a && b;
-	}
-	
-	private function or(a:Bool, b:Bool):Bool {
-		return a || b;
+	/**
+	 * Returns an array of section names that come before this `section`.
+	 */
+	private static function lineage(section:Section):Array<String> {
+		var results = section.prerequisites;
+		
+		for (pre in section.prerequisites) {
+			var index = findSection( pre );
+			
+			if (index > -1) for (pre in sections[index].prerequisites) if (pre != section.name) {
+				index = findSection( pre );
+				
+				if (results.indexOf( pre ) == -1 && index > -1) {
+					results.push( pre );
+					results = results.concat( lineage(sections[index]).filter( function(s) return results.indexOf(s) == -1 ) );
+					
+				}
+				
+			}
+		}
+		
+		return results;
 	}
 	
 	/**
 	 * Converts `value` into a boolean based on its
-	 * existence in `defines`.
+	 * existence in `Tuli.toplevel.defines`.
 	 */
-	private function toBoolean(value:String):Bool {
+	private static function toBoolean(value:String):Bool {
 		var index = -1;
 		var bool = true;
 		var name = '';
@@ -617,13 +630,13 @@ class Tuli {
 				
 		}
 		
-		return bool ? defines.indexOf( name ) > -1 : defines.indexOf( name ) == -1;
+		return bool ? toplevel.defines.indexOf( name ) > -1 : toplevel.defines.indexOf( name ) == -1;
 	}
 	
 	/**
 	 * Find the next `&&` or `||` binop and return its `index-1`.
 	 */
-	private function nextBinop(value:String):Int {
+	private static function nextBinop(value:String):Int {
 		var index = -1;
 		var result = value.length;
 		
@@ -642,9 +655,9 @@ class Tuli {
 	/**
 	 * Return an array containing objects whos `key` evaluates to `true`.
 	 */
-	private function conditional(object:DynamicAccess<Dynamic>):Array<Dynamic> {
+	private static function conditional(object:DynamicAccess<Dynamic>):Array<Dynamic> {
 		var results:Array<Dynamic> = [];
-		trace( defines );
+		
 		for (key in object.keys()) {
 			var index = -1;
 			var value = '';
@@ -679,23 +692,23 @@ class Tuli {
 	/**
 	 * Return a list of files contained within the `path`.
 	 */
-	private static function recurse(path:String) {
+	private static function recurse(path:String):Array<String> {
 		var results = [];
 		path = path.normalize();
+		
 		if (path.isDirectory()) for (directory in path.readDirectory()) {
 			var current = '$path/$directory/'.normalize();
-			if (current.isDirectory()) {
-				results = results.concat( recurse( current ) );
-			} else {
-				results.push( current );
-			}
+			current.isDirectory() ? results = results.concat( recurse( current ) ) : results.push( current );
+			
 		}
 		
 		return results;
 	}
 	
-	// Recursively create the directory in `config.output`.
-	private function createDirectory(path:String) {
+	/**
+	 * Recursively create the directory in `path`.
+	 */
+	private static function createDirectory(path:String) {
 		if (!path.directory().addTrailingSlash().exists()) {
 			
 			var parts = path.directory().split('/');
@@ -714,8 +727,9 @@ class Tuli {
 		}
 	}
 	
-	//// STATICS
-	
+	/**
+	 * Returns a new `StringMap<String>` containing `key` and `value` from both `a` and `b`.
+	 */
 	private static function concat(a:StringMap<String>, b:StringMap<String>):StringMap<String> {
 		var map = new StringMap<String>();
 		
@@ -724,12 +738,24 @@ class Tuli {
 		return map;
 	}
 	
+	/**
+	 * Returns a `Bool` if `value` is an ASCII number.
+	 */
 	private inline static function isNumerical(value:Int):Bool {
 		return value >= '0'.code && value <= '9'.code;
 	}
 	
+	/**
+	 * Returns a `Bool` if `value1 is an ASCII text character.
+	 */
 	private inline static function isCharacter(value:Int):Bool {
 		return value >= 'a'.code && value <= 'z'.code || value >= 'A'.code && value <= 'Z'.code;
 	}
+	
+	private static function bypass(a:Bool):Bool return a;
+	
+	private static function and(a:Bool, b:Bool):Bool return a && b;
+	
+	private static function or(a:Bool, b:Bool):Bool return a || b;
 	
 }
