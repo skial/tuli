@@ -41,6 +41,12 @@
 			}
 		}
 	},
+	"all":{
+		"pre":["compile"],
+		"${path}README.md$":{
+			"cmd":[]
+		}
+	},
 	"minify":{
 		"pre":["build"],
 		"${path}README.md$":{
@@ -66,6 +72,13 @@
 		]
 	},
 	"build":{
+		"pre":["minify"],
+		"${path}README.md$":{
+			"cmd":[]
+		}
+	},
+	"compile":{
+		"pre":["build"],
 		"${path}README.md$":{
 			"cmd":[]
 		}

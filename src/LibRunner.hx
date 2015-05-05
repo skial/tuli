@@ -54,8 +54,7 @@ class LibRunner implements Klas {
 		
 		if (config.exists()) {
 			tuli = new Tuli( config );
-			
-			if (defines.length > 0) tuli.defines = tuli.defines.concat( defines );
+			if (defines.length > 0) Tuli.toplevel.defines = Tuli.toplevel.defines.concat( defines );
 			
 		} else {
 			Sys.println( 'A configuration file could not be found in $directory, please use -c <path> to set one.' );
