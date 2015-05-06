@@ -11,7 +11,6 @@ import haxe.ds.StringMap;
 import haxe.io.BytesInput;
 import haxe.DynamicAccess;
 import haxe.io.BytesOutput;
-import uhx.tuli.util.AlphabeticalSort;
 
 using Lambda;
 using Reflect;
@@ -407,7 +406,7 @@ class Tuli {
 				
 			case '$'.code if (ereg != null && isNumerical(value.fastCodeAt(i + 1))):
 				var id = '';
-				var no = -1;
+				var no:Null<Int> = -1;
 				var j = i;
 				
 				while (j++ < value.length) switch (value.fastCodeAt(j)) {
@@ -448,7 +447,7 @@ class Tuli {
 	
 	private function actions(value:String):EReg->Array<CachedCommand> {
 		var i = -1;
-		var code = -1;
+		var code:Null<Int> = -1;
 		var action = Action.NONE;
 		var command = '';
 		var results:Array<CachedCommand> = [];
