@@ -26,20 +26,24 @@ haxelib local master.zip
 + `env`, `environment`
 + `cmd`, `commands`
 + `mem`, `memory`
++ `pre`, `prerequisites`
 + `define`
 + `if`
 
 ## Keyword Scopes
 
-+ global
++ global scope
 	- `if`
 
-+ toplevel
++ toplevel scope
 	- `var`, `variables`
 	- `env`, `environment`
 	- `define`
 
-+ local
++ section scope
+	- `pre`, `prerequisites`
+	
++ job scope
 	- `var`, `variables`
 	- `cmd`, `commands`
 	- `mem`, `memory`
