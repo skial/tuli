@@ -10,5 +10,12 @@
 -lib cmd
 -D haxelib
 -cp src
--neko run.n
 -main LibRunner
+
+--each
+
+-neko run.n
+
+--next
+
+-cpp bin/cpp/

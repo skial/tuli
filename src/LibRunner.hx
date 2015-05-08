@@ -47,12 +47,16 @@ class LibRunner implements Klas {
 	private var tuli:Tuli;
 	
 	public function new(args:Array<String>) {
+		trace( 'cmd' );
+		@:cmd _;
+		trace( 'new' );
 		directory = args[args.length - 1].normalize();
 		config = '$directory/$config'.normalize();
 		
 		Sys.setCwd( directory );
 		
 		if (config.exists()) {
+			trace( 'config exists' );
 			tuli = new Tuli( config );
 			if (defines.length > 0) Tuli.toplevel.defines = Tuli.toplevel.defines.concat( defines );
 			

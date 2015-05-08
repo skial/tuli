@@ -131,28 +131,39 @@ class Tuli {
 	public function new(cf:String) {
 		if ( cf == null ) throw 'The configuration file can not be null.';
 		
+		trace( 'parse json' );
 		config = Json.parse( cf.getContent() );
 		
+		trace( 'new toplevel' );
 		toplevel = new TopLevel( 'toplevel' + Md5.encode(cf) );
-		sessionEnvironment = toplevel.environment.copy();
+		/*trace( 'copy environment' );
+		sessionEnvironment = toplevel.environment.copy();*/
+		trace( 'add env' );
 		toplevel.environment = toplevel.environment.concat( Sys.environment() );
 		
+		trace( 'set env' );
 		// Only set user defined enviroment `key:value` passed in by command argument or json.
 		for (key in sessionEnvironment.keys()) Sys.putEnv(key, sessionEnvironment.get( key ));
 		
+		trace( 'push toplevel' );
 		sections.push( toplevel );
 	}
 	
 	public function setup():Void {
+		trace( 'setup toplevel' );
 		setupToplevel( config );
+		trace( 'setup unknowns' );
 		setupUnknowns( config );
+		trace( 'setup lineage' );
 		setupLineages();
+		trace( 'sort sections' );
 		sortSections();
 		
 		allFiles = recurse( '${Sys.getCwd()}/${toplevel.variables.exists("input") ? toplevel.variables.get("input") : ""}/'.normalize() );
 	}
 	
 	public function runJobs():Void {
+		trace( 'run jobs' );
 		for (section in sections) {
 			trace( section.name );
 			for (job in section.jobs) {
@@ -519,7 +530,7 @@ class Tuli {
 	
 	private function run(actions:Array<PopulatedCommand>):Void {
 		var previous:Process = null;
-		var collection:Array<Process> = [];
+		var collection:Array<{stdin:Output, stdout:Input, stderr:Input, close:Void->Void}> = [];
 		
 		var index:Int = 0;
 		var current:Process = null;
@@ -529,37 +540,44 @@ class Tuli {
 			switch (action.action) {
 				case Action.NONE if (action.command.isAbsolute() && action.command.exists()):
 					trace( 'creating file read : ${action.command}' );
-					index = collection.push( current = cast {
+					index = collection.push( cast {
 						stdin:null,
 						stdout:File.read( action.command ),
 						stderr:null,
 						name:new String(action.command),
 						close:function() untyped __this__.stdout.close(),
 					} ) -1;
+					trace( collection[index] );
 					
 				case Action.PIPELINE | Action.REDIRECT_OUTPUT if (action.command.isAbsolute()):
 					trace( 'creating file write : ${action.command}' );
-					index = collection.push( current = cast {
+					index = collection.push( cast {
 						stdin:File.write( action.command ),
 						stdout:null,
 						stderr:null,
 						name:new String(action.command),
 						close:function() untyped __this__.stdin.close(),
 					} ) -1;
+					trace( collection[index] );
 					
 				case _:
 					trace( 'creating process : ${action.command}' );
 					parts = action.command.split(' ');
-					index = collection.push( current = new Process(parts.shift(), parts) ) - 1;
+					index = collection.push( cast new Process(parts.shift(), parts) ) - 1;
+					trace( collection[index] );
 					
 			}
 			
 		}
 		
 		var length = collection.length - 1;
+		trace( actions );
+		trace( collection );
 		for (i in 0...collection.length) if (i + 1 <= length) {
 			var current = collection[i];
 			var next = collection[i + 1];
+			trace(current);
+			trace(next);
 			next.stdin.writeInput( current.stdout );
 			next.stdin.close();
 		}
@@ -633,14 +651,14 @@ class Tuli {
 	}
 	
 	/**
-	 * Find the next `&&` or `||` binop and return its `index-1`.
+	 * Find the next `&&`, `||` or `==` binop and return its `index-1`.
 	 */
 	private static function nextBinop(value:String):Int {
 		var index = -1;
 		var result = value.length;
 		
 		while (index++ < value.length) switch(value.fastCodeAt(index)) {
-			case x if (['|'.code, '&'.code].indexOf(x) > -1 && value.fastCodeAt(index + 1) == x):
+			case x if (['|'.code, '&'.code, '='.code].indexOf(x) > -1 && value.fastCodeAt(index + 1) == x):
 				result = index-1;
 				break;
 				
