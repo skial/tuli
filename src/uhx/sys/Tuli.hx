@@ -81,6 +81,39 @@ private typedef PopulatedCommand = {
 	var command:String;
 }
 
+private typedef FakeProcess = {
+	var stdin:Output;
+	var stdout:Input;
+	var stderr:Input;
+	function close():Void;
+}
+
+private abstract Proc(FakeProcess) from FakeProcess to FakeProcess {
+	
+	public var stdin(get, never):Output;
+	public var stdout(get, never):Input;
+	public var stderr(get, never):Input;
+	
+	public inline function close() this.close();
+	public inline function new(v:FakeProcess) this = v;
+	private inline function get_stdin():Output return this.stdin;
+	private inline function get_stdout():Input return this.stdout;
+	private inline function get_stderr():Input return this.stderr;
+	
+	@:noCompletion @:from public static inline function fromOutput(io:Output):Proc {
+		return new Proc( { stdin:io, stdout:null, stderr:null, close:function() io.close() } );
+	}
+	
+	@:noCompletion @:from public static inline function fromInput(io:Input):Proc {
+		return new Proc( { stdin:null, stdout:io, stderr:null, close:function() io.close() } );
+	}
+	
+	@:noCompletion @:from public static inline function fromProcess(process:Process):Proc {
+		return new Proc( cast process );
+	}
+	
+}
+
 private class BIO {
 	
 	public var stdin:Output;
@@ -529,41 +562,26 @@ class Tuli {
 	}
 	
 	private function run(actions:Array<PopulatedCommand>):Void {
-		var previous:Process = null;
-		var collection:Array<{stdin:Output, stdout:Input, stderr:Input, close:Void->Void}> = [];
-		
 		var index:Int = 0;
-		var current:Process = null;
 		var parts:Array<String> = [];
+		var collection:Array<Proc> = [];
 		
 		for (action in actions) {
 			switch (action.action) {
 				case Action.NONE if (action.command.isAbsolute() && action.command.exists()):
 					trace( 'creating file read : ${action.command}' );
-					index = collection.push( cast {
-						stdin:null,
-						stdout:File.read( action.command ),
-						stderr:null,
-						name:new String(action.command),
-						close:function() untyped __this__.stdout.close(),
-					} ) -1;
+					index = collection.push( File.read( action.command ) ) -1;
 					trace( collection[index] );
 					
 				case Action.PIPELINE | Action.REDIRECT_OUTPUT if (action.command.isAbsolute()):
 					trace( 'creating file write : ${action.command}' );
-					index = collection.push( cast {
-						stdin:File.write( action.command ),
-						stdout:null,
-						stderr:null,
-						name:new String(action.command),
-						close:function() untyped __this__.stdin.close(),
-					} ) -1;
+					index = collection.push( File.write( action.command ) ) -1;
 					trace( collection[index] );
 					
 				case _:
 					trace( 'creating process : ${action.command}' );
 					parts = action.command.split(' ');
-					index = collection.push( cast new Process(parts.shift(), parts) ) - 1;
+					index = collection.push( new Process(parts.shift(), parts) ) - 1;
 					trace( collection[index] );
 					
 			}
