@@ -675,9 +675,9 @@ class Tuli {
 		var index = -1;
 		var result = value.length;
 		
-		while (index++ < value.length) switch(value.fastCodeAt(index)) {
-			case x if (['|'.code, '&'.code, '='.code].indexOf(x) > -1 && value.fastCodeAt(index + 1) == x):
-				result = index-1;
+		while (index++ < value.length) switch([value.fastCodeAt(index), value.fastCodeAt(index + 1)]) {
+			case ['|'.code, '|'.code], ['&'.code, '&'.code], ['='.code, '='.code], ['!'.code, '='.code]:
+				result = index - 1;
 				break;
 				
 			case _:
