@@ -669,7 +669,7 @@ class Tuli {
 	}
 	
 	/**
-	 * Find the next `&&`, `||` or `==` binop and return its `index-1`.
+	 * Find the next `&&`, `||`, `==` or '!=' binop and return its `index-1`.
 	 */
 	private static function nextBinop(value:String):Int {
 		var index = -1;
