@@ -8,6 +8,8 @@
 -lib mo
 -lib tappi
 -lib format
+-lib utest
+-lib systools
 -cp src
 -neko run.n
 -D use-rtti-doc

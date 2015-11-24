@@ -534,7 +534,7 @@ class Tuli {
 		 * results = [
 		 * 		{command:'cat', action:Action.NONE},
 		 * 		{command:'C:/path/to/File.md', action:Action.REDIRECT_INPUT},
-		 * 		{command:'C:/path/to/Output.md', action:Action.REDURECT_OUTPUT},
+		 * 		{command:'C:/path/to/Output.md', action:Action.REDIRECT_OUTPUT},
 		 * ]
 		 * ------
 		 * Needs to convert to:

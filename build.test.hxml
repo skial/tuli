@@ -1,0 +1,17 @@
+-lib klas
+-lib cmd
+-lib uhu
+-lib detox
+-lib tjson
+-lib imagemagick
+-lib hxparse
+-lib mo
+-lib tappi
+-lib format
+-lib utest
+-lib systools
+-cp src
+-cp test
+-neko spec.n
+-D use-rtti-doc
+-main uhx.sys.TuliSpec
