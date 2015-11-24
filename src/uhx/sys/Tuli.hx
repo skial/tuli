@@ -25,7 +25,7 @@ private class Base {
 	public var variables:StringMap<String>;
 	public var environment:StringMap<String>;
 	
-	public function new() {
+	public inline function new() {
 		variables = new StringMap();
 		environment = new StringMap();
 	}
@@ -40,7 +40,7 @@ private class Job extends Base {
 	
 	public var execute:EReg->Void = null;
 	
-	public function new(expression:EReg) {
+	public inline function new(expression:EReg) {
 		this.expression = expression;
 		super();
 		
@@ -54,7 +54,7 @@ private class Section extends Base {
 	public var jobs:Array<Job> = [];
 	public var prerequisites:Array<String> = [];
 	
-	public function new(name:String) {
+	public inline function new(name:String) {
 		this.name = name;
 		super();
 	}
@@ -65,7 +65,7 @@ private class TopLevel extends Section {
 	
 	public var defines:Array<String> = [];
 	
-	public function new(name:String) {
+	public inline function new(name:String) {
 		super( name );
 	}
 	

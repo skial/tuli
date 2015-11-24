@@ -20,7 +20,7 @@ using Lambda;
 @:cmd
 @:access(uhx.sys.Tuli)
 @:usage( 'haxelib run tuli [options]' )
-class LibRunner implements Klas {
+class LibRunner {
 	
 	static function main() {
 		var runner = new LibRunner( Sys.args() );
@@ -33,7 +33,7 @@ class LibRunner implements Klas {
 	public var global:Bool;
 	
 	/**
-	 * The location of your json file. Default config.json.
+	 * Your json file. Default config.json.
 	 */
 	@alias('c') 
 	public var config:String = 'config.json';
@@ -47,13 +47,18 @@ class LibRunner implements Klas {
 	private var tuli:Tuli;
 	
 	public function new(args:Array<String>) {
-		trace( 'cmd' );
 		@:cmd _;
-		trace( 'new' );
-		directory = args[args.length - 1].normalize();
-		config = '$directory/$config'.normalize();
 		
-		Sys.setCwd( directory );
+		if (args != null && args.length == 0) {
+			directory = Sys.getCwd();
+			
+		} else {
+			directory = args[args.length - 1].normalize();
+			Sys.setCwd( directory );
+			
+		}
+		
+		config = '$directory/$config'.normalize();
 		
 		if (config.exists()) {
 			trace( 'config exists' );
