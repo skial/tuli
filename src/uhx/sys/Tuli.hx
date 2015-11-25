@@ -708,6 +708,9 @@ class Tuli {
 					index += 1;
 					result = or.bind( result( toBoolean(value) ), _ );
 					
+				case '='.code if (key.fastCodeAt(index + 1) == '='.code):
+					index += 1;
+					
 				case _:
 					var nextPos = nextBinop( key.substring(index) );
 					value = key.substring(index, index + nextPos).trim();
@@ -793,5 +796,7 @@ class Tuli {
 	private static function and(a:Bool, b:Bool):Bool return a && b;
 	
 	private static function or(a:Bool, b:Bool):Bool return a || b;
+	
+	private static function equals<T>(a:T, b:T):Bool return a == b;
 	
 }

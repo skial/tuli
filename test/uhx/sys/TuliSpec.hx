@@ -71,7 +71,7 @@ using sys.FileSystem;
 		Assert.isFalse( Sys.environment().exists( 'tuliTest' ) );
 	}
 	
-	public function testEnvironment_if() {
+	public function testEnvironment_ifTrue() {
 		var t = process( { env: { always:'awesome', 'if': { 'HAXEPATH': { everythingis:'awesome' }}}} );
 		var e = Tuli.toplevel.environment;
 		Assert.isTrue( e.exists( 'always' ) );
@@ -79,6 +79,67 @@ using sys.FileSystem;
 		Assert.isTrue( e.exists( 'HAXEPATH' ) );
 		Assert.isTrue( e.exists( 'everythingis' ) );
 		Assert.equals( 'awesome', e.get( 'everythingis' ) );
+	}
+	
+	public function testEnvironment_ifFalse() {
+		var t = process( { env: { always:'awesome', 'if': { '!blahTuli': { everythingis:'awesome' }}}} );
+		var e = Tuli.toplevel.environment;
+		Assert.isTrue( e.exists( 'always' ) );
+		Assert.equals( 'awesome', e.get( 'always' ) );
+		Assert.isFalse( e.exists( 'blahTuli' ) );
+		Assert.isTrue( e.exists( 'everythingis' ) );
+		Assert.equals( 'awesome', e.get( 'everythingis' ) );
+	}
+	
+	public function testEnvironment_definesIfTrue() {
+		var t = process( { define:['a'], env: { 'if': { 'a': { everythingis:'awesome' }}}} );
+		var d = Tuli.toplevel.defines;
+		var e = Tuli.toplevel.environment;
+		Assert.isTrue( d.indexOf( 'a' ) > -1 );
+		Assert.isTrue( e.exists( 'everythingis' ) );
+		Assert.equals( 'awesome', e.get( 'everythingis' ) );
+	}
+	
+	public function testEnvironment_definesIfFalse() {
+		var t = process( { define:[], env: { 'if': { '!a': { everythingis:'awesome' }}}} );
+		var d = Tuli.toplevel.defines;
+		var e = Tuli.toplevel.environment;
+		Assert.isTrue( d.length == 0 );
+		Assert.isTrue( e.exists( 'everythingis' ) );
+		Assert.equals( 'awesome', e.get( 'everythingis' ) );
+	}
+	
+	public function testEnvironment_definesIfFail() {
+		var t = process( { define:[], env: { 'if': { 'a': { everythingis:'awesome' }}}} );
+		var d = Tuli.toplevel.defines;
+		var e = Tuli.toplevel.environment;
+		Assert.isTrue( d.length == 0 );
+		Assert.isFalse( e.exists( 'everythingis' ) );
+		Assert.isNull( e.get( 'everythingis' ) );
+	}
+	
+	public function testIf_Or() {
+		var t = process( { define:['b'], 'if': { 'a || b': { define:['c'] }} } );
+		var d = Tuli.toplevel.defines;
+		Assert.contains( 'b', d );
+		Assert.contains( 'c', d );
+	}
+	
+	public function testIf_And() {
+		var t = process( { define:['a', 'b'], 'if': { 'a && b': { define:['c'] }}} );
+		var d = Tuli.toplevel.defines;
+		Assert.contains( 'a', d );
+		Assert.contains( 'b', d );
+		Assert.contains( 'c', d );
+	}
+	
+	public function testIf_Equals() {
+		var t = process( { env:{a:'b'}, 'if': { 'a == b': { define:['c'] }}} );
+		var d = Tuli.toplevel.defines;
+		var e = Tuli.toplevel.environment;
+		Assert.isTrue( e.exists( 'a' ) );
+		Assert.equals( 'b', e.get( 'a' ) );
+		Assert.contains( 'c', d );
 	}
 	
 }

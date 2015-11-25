@@ -39,6 +39,7 @@
     <library name="tappi" />
     <library name="utest" />
     <library name="systools" />
+    <library name="jete" />
   </haxelib>
   <!-- Class files to compile (other referenced classes will automatically be included) -->
   <compileTargets>
