@@ -665,7 +665,8 @@ class Tuli {
 				
 		}
 		
-		return bool ? toplevel.defines.indexOf( name ) > -1 : toplevel.defines.indexOf( name ) == -1;
+		return (bool ? toplevel.defines.indexOf( name ) > -1 : toplevel.defines.indexOf( name ) == -1) 
+			|| (bool ? toplevel.environment.exists( name ) : !toplevel.environment.exists( name ));
 	}
 	
 	/**

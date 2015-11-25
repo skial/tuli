@@ -55,9 +55,30 @@ using sys.FileSystem;
 		Assert.contains( 'c', d );
 	}
 	
-	public function testEnvironment() {
+	public function testEnvironment_systemDefaults() {
+		var t = process( { env: { } } );
+		var e = Tuli.toplevel.environment;
+		Assert.isTrue( e.exists( 'HAXEPATH' ) );
+	}
+	
+	public function testEnvironment_configValues() {
+		trace( [for (k in Sys.environment().keys()) k] );
 		trace( [for (k in Sys.environment().keys()) '$k :: ' + Sys.environment().get( k )] );
-		var t = process( { env:{} } );
+		
+		var t = process( { env: { tuliTest: 'hello world' } } );
+		var e = Tuli.toplevel.environment;
+		Assert.isTrue( e.exists( 'tuliTest' ) );
+		Assert.isFalse( Sys.environment().exists( 'tuliTest' ) );
+	}
+	
+	public function testEnvironment_if() {
+		var t = process( { env: { always:'awesome', 'if': { 'HAXEPATH': { everythingis:'awesome' }}}} );
+		var e = Tuli.toplevel.environment;
+		Assert.isTrue( e.exists( 'always' ) );
+		Assert.equals( 'awesome', e.get( 'always' ) );
+		Assert.isTrue( e.exists( 'HAXEPATH' ) );
+		Assert.isTrue( e.exists( 'everythingis' ) );
+		Assert.equals( 'awesome', e.get( 'everythingis' ) );
 	}
 	
 }
