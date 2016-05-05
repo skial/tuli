@@ -385,11 +385,12 @@ class Tuli {
 	 * Replace `${name}` with a matching value from `variables` or `environment`.
 	 * Replace `$0` with whatever is returned by the `ereg` regular expression.
 	 */
+	 // TODO this ereg looks pointless... hangover??
 	private function substitution(value:String, ?ereg:EReg):EReg->String {
 		var parts:Array<EReg->String> = [];
 		var i = -1;
 		var result = '';
-		
+		trace( value );
 		// Look for `${variable_name}` statements and replace
 		// with a match from either variables or environments.
 		while (i++ < value.length) switch (value.fastCodeAt(i)) {
@@ -410,7 +411,7 @@ class Tuli {
 				// Remove any surrounding whitespace.
 				id = id.trim();
 				var exists = false;
-				
+				trace( id );
 				// See if the value exists and add it if it does.
 				if (exists = toplevel.variables.exists( id )) {
 					parts.push( function(s, _) { return s + toplevel.variables.get(id); }.bind(new String(result), _) );
@@ -431,6 +432,7 @@ class Tuli {
 				
 				while (j++ < value.length) switch (code = value.fastCodeAt(j)) {
 					case _ if(!isCharacter(code) && !isNumerical(code) && code != '_'.code):
+						j--;
 						break;
 						
 					case _:
@@ -463,10 +465,12 @@ class Tuli {
 						id += String.fromCharCode(x);
 						
 					case _:
+						j--;
 						break;
 						
 				}
 				
+				trace( id );
 				// Remove any surrounding whitespace.
 				id = id.trim();
 				no = Std.parseInt( id );
@@ -475,7 +479,8 @@ class Tuli {
 				if (no != null) {
 					i = j;
 					
-					parts.push( function(s:String, i:Int, e:EReg) { return s + e.matched( no ); } .bind(new String(result), no, _) );
+					trace( result );
+					parts.push( function(s:String, i:Int, e:EReg) { trace( no, e.matched(no) );return s + e.matched( no ); } .bind(new String(result), no, _) );
 					result = '';
 					
 				}
@@ -490,7 +495,9 @@ class Tuli {
 		return function(e:EReg) {
 			var buffer = new StringBuf();
 			for (part in parts) buffer.add( part(e) );
-			return buffer.toString();
+			var result = buffer.toString();
+			trace( result );
+			return result;
 		}
 	}
 	
@@ -716,6 +723,7 @@ class Tuli {
 					
 				case '='.code if (key.fastCodeAt(index + 1) == '='.code):
 					index += 1;
+					result = equals.bind( result( toBoolean(value) ), _ );
 					
 				case _:
 					var nextPos = nextBinop( key.substring(index) );

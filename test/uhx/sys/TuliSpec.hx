@@ -47,7 +47,7 @@ using sys.FileSystem;
 		
 	}
 	
-	public function testDefines() {
+	/*public function testDefines() {
 		var t = process( { define:['a', 'b', 'c'] } );
 		var d = Tuli.toplevel.defines;
 		Assert.contains( 'a', d );
@@ -140,6 +140,23 @@ using sys.FileSystem;
 		Assert.isTrue( e.exists( 'a' ) );
 		Assert.equals( 'b', e.get( 'a' ) );
 		Assert.contains( 'c', d );
+	}
+	
+	@:access(uhx.sys.Tuli)
+	public function testStringSubstitution_simpleText() {
+		var t:Tuli = process( { 'var':{ a:'B', b:'A', c:'C2C' } } );
+		var s = t.substitution( "${b}-${c}-${a}" )( new EReg('', '') );
+		Assert.equals( 'A-C2C-B', s );
+	}*/
+	
+	@:access(uhx.sys.Tuli)
+	public function testStringSubstitution_ereg() {
+		var t:Tuli = process( { 'var':{ a:'B', b:'A', c:'C2C' } } );
+		var e = new EReg( '([a-z]+)[0-9]*([a-z]+)', 'i' );
+		var x = 'abc123cba';
+		Assert.isTrue( e.match( x ) );
+		var s = t.substitution( "$2_$1::$0", e )( e );
+		Assert.equals( 'cba_abc::abc123cba', s );
 	}
 	
 }

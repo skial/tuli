@@ -13,5 +13,6 @@
 -cp src
 -cp test
 -neko spec.n
+-D debug
 -D use-rtti-doc
 -main uhx.sys.TuliSpec
