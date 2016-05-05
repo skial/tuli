@@ -41,8 +41,15 @@ class LibRunner {
 	/**
 	 * Define a conditional flag.
 	 */
-	@alias('D', 'd')
+	@alias('D')
 	public var defines:Array<String> = [];
+	
+	/**
+	 * Does not execute any commands.
+	 */
+	@alias('d')
+	@:native('dry-run')
+	public var dryRun:Bool;
 	
 	private var tuli:Tuli;
 	
@@ -70,10 +77,11 @@ class LibRunner {
 			return;
 			
 		}
-		
+		trace( dryRun );
 		if (global) makeGlobal();
 		
 		if (tuli != null) {
+			tuli.dryRun = dryRun;
 			tuli.setup();
 			tuli.runJobs();
 			

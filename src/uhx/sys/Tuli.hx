@@ -159,6 +159,7 @@ class Tuli {
 	private static var sections:Array<Section> = [];
 	private static var sessionEnvironment:StringMap<String> = new StringMap();
 	
+	public var dryRun:Bool = false;
 	public var config:DynamicAccess<Dynamic>;
 	
 	public function new(cf:String) {
@@ -196,12 +197,15 @@ class Tuli {
 	}
 	
 	public function runJobs():Void {
+		trace( 'dry run => $dryRun' );
 		trace( 'run jobs' );
 		for (section in sections) {
 			trace( section.name );
 			for (job in section.jobs) {
+				trace( job );
 				for (file in allFiles) if (job.expression.match( file )) {
-					job.execute( job.expression );
+					trace( file );
+					if (!dryRun) job.execute( job.expression );
 					
 				}
 				
@@ -285,6 +289,7 @@ class Tuli {
 				
 			case _:
 				var value:DynamicAccess<Dynamic> = config.get( key );
+				trace( key, value );
 				
 				if (value.exists('cmd')) {
 					var job = new Job( new EReg( key.indexOf("${") > -1 ? substitution( key )(null) : key, '') );
@@ -567,6 +572,7 @@ class Tuli {
 		var collection:Array<Proc> = [];
 		
 		for (action in actions) {
+			trace( action );
 			switch (action.action) {
 				case Action.NONE if (action.command.isAbsolute() && action.command.exists()):
 					trace( 'creating file read : ${action.command}' );

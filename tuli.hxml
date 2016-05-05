@@ -12,5 +12,8 @@
 -lib systools
 -cp src
 -neko run.n
+-D haxelib
 -D use-rtti-doc
+-D debug
+-D cmd-verbose
 -main LibRunner
